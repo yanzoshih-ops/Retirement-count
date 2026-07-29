@@ -640,6 +640,24 @@
   }
 
   /* ================= 股價抓取 ================= */
+
+  // 依序嘗試: 1) 直接呼叫  2) 透過公開 CORS Proxy 轉發
+  // 部署在 github.io 等網域時, TWSE/TPEx 通常會擋跨網域請求, 此時自動改走 proxy。
+  async function fetchJsonWithFallback(url){
+    try{
+      const res = await fetch(url);
+      if(res.ok) return { data: await res.json(), viaProxy:false };
+    }catch(e){ /* 直連失敗, 往下走 proxy */ }
+
+    try{
+      const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+      const res2 = await fetch(proxyUrl);
+      if(res2.ok) return { data: await res2.json(), viaProxy:true };
+    }catch(e){ /* proxy 也失敗 */ }
+
+    return null;
+  }
+
   async function fetchAllPrices(){
     const statusEl = $('fetchStatus');
     statusEl.className = 'fetch-status';
@@ -647,36 +665,33 @@
 
     let twseMap = {}, tpexMap = {};
     let twseOk = false, tpexOk = false;
+    let usedProxy = false;
 
-    try{
-      const res = await fetch('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL');
-      if(res.ok){
-        const data = await res.json();
-        data.forEach(row=>{
-          if(row.Code){
-            twseMap[row.Code] = { name: row.Name, price: parseFloat(row.ClosingPrice) };
-          }
-        });
-        twseOk = true;
-      }
-    }catch(e){ /* CORS 或網路問題，忽略，稍後標示 */ }
+    const twseResult = await fetchJsonWithFallback('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL');
+    if(twseResult && Array.isArray(twseResult.data)){
+      twseResult.data.forEach(row=>{
+        if(row.Code){
+          twseMap[row.Code] = { name: row.Name, price: parseFloat(row.ClosingPrice) };
+        }
+      });
+      twseOk = true;
+      if(twseResult.viaProxy) usedProxy = true;
+    }
 
-    try{
-      const res2 = await fetch('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes');
-      if(res2.ok){
-        const data2 = await res2.json();
-        data2.forEach(row=>{
-          const code = row.SecuritiesCompanyCode || row.CompanyCode || row.Code || row['證券代號'];
-          const name = row.CompanyName || row.Name || row['證券名稱'];
-          const closeRaw = row.Close || row.ClosingPrice || row['收盤價'];
-          const close = parseFloat(closeRaw);
-          if(code && !isNaN(close)){
-            tpexMap[code] = { name: name||'', price: close };
-          }
-        });
-        tpexOk = true;
-      }
-    }catch(e){ /* 忽略 */ }
+    const tpexResult = await fetchJsonWithFallback('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes');
+    if(tpexResult && Array.isArray(tpexResult.data)){
+      tpexResult.data.forEach(row=>{
+        const code = row.SecuritiesCompanyCode || row.CompanyCode || row.Code || row['證券代號'];
+        const name = row.CompanyName || row.Name || row['證券名稱'];
+        const closeRaw = row.Close || row.ClosingPrice || row['收盤價'];
+        const close = parseFloat(closeRaw);
+        if(code && !isNaN(close)){
+          tpexMap[code] = { name: name||'', price: close };
+        }
+      });
+      tpexOk = true;
+      if(tpexResult.viaProxy) usedProxy = true;
+    }
 
     let matched = 0, unmatched = 0;
     holdings.forEach(h=>{
@@ -704,10 +719,10 @@
 
     if(!twseOk && !tpexOk){
       statusEl.className = 'fetch-status err';
-      statusEl.textContent = '無法自動連線（可能為網路或跨網域限制），請手動輸入股價';
+      statusEl.textContent = '無法自動連線（直連與 Proxy 皆失敗），請手動輸入股價';
     } else {
       statusEl.className = 'fetch-status ok';
-      statusEl.textContent = `已更新 ${matched} 檔${unmatched? '，' + unmatched + ' 檔查無資料' : ''} · ${new Date().toLocaleTimeString('zh-TW')}`;
+      statusEl.textContent = `已更新 ${matched} 檔${unmatched? '，' + unmatched + ' 檔查無資料' : ''}${usedProxy? '（經 Proxy 轉發）':''} · ${new Date().toLocaleTimeString('zh-TW')}`;
     }
   }
 

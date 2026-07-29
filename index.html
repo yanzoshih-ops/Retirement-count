@@ -174,6 +174,11 @@
   table.holdings input:focus{border-color:var(--gold);}
   table.holdings input.code{width:78px;}
   table.holdings input.shares, table.holdings input.cost{width:100px;}
+  table.holdings select.market-select{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:3px;
+    color:var(--paper);font-family:var(--mono);font-size:12.5px;padding:6px 4px;outline:none;
+  }
+  table.holdings select.market-select:focus{border-color:var(--gold);}
   table.holdings .price-cell{color:var(--paper);}
   table.holdings .price-cell .src{display:block;font-size:9.5px;color:var(--text-faint);margin-top:2px;}
   table.holdings .name-cell{color:var(--text-dim);min-width:70px;}
@@ -297,41 +302,51 @@
   <div class="section">
     <div class="section-head">
       <h2><span class="idx">01</span> 資產組合（真實持股）</h2>
-      <div class="section-note">股價來源：台灣證交所／櫃買中心 OpenAPI（前一交易日收盤）</div>
+      <div class="section-note">台股：證交所／櫃買中心 OpenAPI ・ 美股：Yahoo Finance／Stooq（前一交易日收盤）</div>
     </div>
     <div class="card">
       <div class="holdings-toolbar">
-        <div style="display:flex;gap:10px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
           <button class="btn primary" id="btnAddRow">＋ 新增持股</button>
           <button class="btn" id="btnFetch">↻ 重新抓取股價</button>
+          <div class="field" style="margin:0;">
+            <div class="input-row" style="border:none;padding:0;gap:6px;">
+              <span class="suffix" style="padding:0;color:var(--text-faint);">USD/TWD 匯率</span>
+              <input type="number" step="0.01" id="usdTwdRate" value="32.5" style="width:70px;text-align:right;">
+            </div>
+          </div>
         </div>
         <div class="fetch-status" id="fetchStatus">尚未抓取</div>
       </div>
 
+      <div style="overflow-x:auto;">
       <table class="holdings">
         <thead>
           <tr>
+            <th style="width:76px;">市場</th>
             <th style="width:90px;">代號</th>
             <th>名稱</th>
-            <th style="width:110px;">股數</th>
-            <th style="width:110px;">每股成本</th>
+            <th style="width:100px;">股數</th>
+            <th style="width:100px;">每股成本</th>
             <th style="width:130px;">最新收盤</th>
-            <th style="width:130px;">市值</th>
-            <th style="width:120px;">損益</th>
+            <th style="width:130px;">市值（原幣）</th>
+            <th style="width:130px;">市值（TWD）</th>
+            <th style="width:120px;">損益（原幣）</th>
             <th style="width:36px;"></th>
           </tr>
         </thead>
         <tbody id="holdingsBody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="4">股票市值合計</td>
-            <td></td>
+            <td colspan="6">股票市值合計（換算 TWD）</td>
             <td id="holdingsTotalValue">—</td>
+            <td id="holdingsTotalValueTwd">—</td>
             <td id="holdingsTotalPnl">—</td>
             <td></td>
           </tr>
         </tfoot>
       </table>
+      </div>
       <div class="holdings-empty" id="holdingsEmpty" style="display:none;">尚未新增任何持股，點選上方「＋ 新增持股」開始輸入。</div>
 
       <div class="grid-inputs" style="margin-top:26px;">
@@ -444,7 +459,7 @@
 
   <footer>
     本頁面所有計算基於使用者輸入之假設參數（報酬率、通膨率等）與自動抓取之股價資料，僅供追蹤與情境模擬使用，不構成投資建議。<br>
-    股價資料來源為台灣證交所（TWSE）與證券櫃檯買賣中心（TPEx）之公開 OpenAPI，僅反映最近一個交易日收盤價，可能因網路或跨網域限制無法自動取得，屆時請手動輸入。
+    股價資料來源：台股為台灣證交所（TWSE）與證券櫃檯買賣中心（TPEx）之公開 OpenAPI；美股為 Yahoo Finance 或 Stooq 公開資料；USD/TWD 匯率來自 open.er-api.com。皆僅反映最近一個交易日收盤價與即時匯率，可能因網路、跨網域限制或第三方服務異動無法自動取得，屆時請手動輸入對應欄位。
   </footer>
 
 </div>
@@ -508,6 +523,7 @@
       annualReturn: (parseFloat($('annualReturn').value) || 0)/100,
       firstYearExpense: parseFloat($('firstYearExpense').value) || 0,
       inflation: (parseFloat($('inflation').value) || 0)/100,
+      usdTwdRate: parseFloat($('usdTwdRate').value) || 32.5,
     };
   }
   function applyInputs(cfg){
@@ -519,6 +535,7 @@
     $('annualReturn').value = cfg.annualReturn!==undefined ? cfg.annualReturn*100 : 10;
     $('firstYearExpense').value = cfg.firstYearExpense ?? 1000000;
     $('inflation').value = cfg.inflation!==undefined ? cfg.inflation*100 : 2.5;
+    $('usdTwdRate').value = cfg.usdTwdRate ?? 32.5;
   }
 
   async function loadStorage(){
@@ -566,10 +583,14 @@
   /* ================= 持股表格 ================= */
   function addHolding(prefill){
     holdings.push(Object.assign({
-      id: holdingIdSeq++, code:'', name:'', shares:0, cost:0, price:null, source:null
+      id: holdingIdSeq++, market:'TW', code:'', name:'', shares:0, cost:0, price:null, source:null
     }, prefill||{}));
     saveHoldings();
     renderHoldings();
+  }
+
+  function getFxRate(){
+    return parseFloat($('usdTwdRate').value) || 32.5;
   }
 
   function renderHoldings(){
@@ -577,31 +598,55 @@
     tbody.innerHTML = '';
     $('holdingsEmpty').style.display = holdings.length ? 'none' : 'block';
 
-    let totalValue = 0, totalCost = 0;
+    const fx = getFxRate();
+    let totalValueTwd = 0, totalCostTwd = 0;
+    let totalValueOrig = 0; // 僅在單一幣別情境下有意義, 顯示用途次要
 
     holdings.forEach(h=>{
+      const market = h.market || 'TW';
+      const fxMul = market==='US' ? fx : 1;
       const value = (h.price!==null && h.price!==undefined) ? h.shares*h.price : 0;
       const cost = h.shares*h.cost;
-      totalValue += value;
-      totalCost += cost;
+      const valueTwd = value*fxMul;
+      const costTwd = cost*fxMul;
+      totalValueTwd += valueTwd;
+      totalCostTwd += costTwd;
+      totalValueOrig += value;
       const pnl = value - cost;
       const pnlPct = cost>0 ? (pnl/cost*100) : 0;
+      const currencyLabel = market==='US' ? 'USD' : 'TWD';
+      const codePlaceholder = market==='US' ? 'AAPL' : '2330';
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input class="code" data-field="code" value="${h.code||''}" placeholder="2330"></td>
+        <td>
+          <select class="market-select" data-field="market">
+            <option value="TW" ${market==='TW'?'selected':''}>台股</option>
+            <option value="US" ${market==='US'?'selected':''}>美股</option>
+          </select>
+        </td>
+        <td><input class="code" data-field="code" value="${h.code||''}" placeholder="${codePlaceholder}"></td>
         <td class="name-cell">${h.name ? h.name : (h.code ? '<span style="color:var(--text-faint)">未取得</span>' : '—')}</td>
         <td><input class="shares" type="number" data-field="shares" value="${h.shares||''}" placeholder="股數"></td>
-        <td><input class="cost" type="number" data-field="cost" value="${h.cost||''}" placeholder="成本/股"></td>
+        <td><input class="cost" type="number" data-field="cost" value="${h.cost||''}" placeholder="成本/股 (${currencyLabel})"></td>
         <td class="price-cell">
           <input type="number" step="0.01" data-field="price" value="${h.price!==null&&h.price!==undefined?h.price:''}" placeholder="手動輸入">
           <span class="src">${h.source ? h.source : '尚未抓取'}</span>
         </td>
-        <td>${fmtFull(value)}</td>
+        <td>${fmtFull(value)} <span style="color:var(--text-faint);">${currencyLabel}</span></td>
+        <td>${fmtFull(valueTwd)}</td>
         <td class="pnl ${pnl>=0?'pos':'neg'}">${cost>0 ? (pnl>=0?'+':'') + fmtFull(pnl) + ' (' + pnlPct.toFixed(1) + '%)' : '—'}</td>
         <td><button class="row-del" data-id="${h.id}" title="刪除">×</button></td>
       `;
       tbody.appendChild(tr);
+
+      tr.querySelector('.market-select').addEventListener('change', (e)=>{
+        h.market = e.target.value;
+        h.price = null; h.name=''; h.source=null; // 換市場後價格需重新抓取
+        saveHoldings();
+        renderHoldings();
+        computeAll();
+      });
 
       tr.querySelectorAll('input').forEach(inp=>{
         inp.addEventListener('change', (e)=>{
@@ -626,17 +671,23 @@
       });
     });
 
-    $('holdingsTotalValue').textContent = fmtFull(totalValue);
-    const totalPnl = totalValue-totalCost;
-    $('holdingsTotalPnl').textContent = totalCost>0
-      ? (totalPnl>=0?'+':'') + fmtFull(totalPnl) + ' (' + (totalPnl/totalCost*100).toFixed(1) + '%)'
+    $('holdingsTotalValue').textContent = fmtFull(totalValueOrig) + ' (混合幣別, 僅供參考)';
+    $('holdingsTotalValueTwd').textContent = fmtFull(totalValueTwd);
+    const totalPnlTwd = totalValueTwd-totalCostTwd;
+    $('holdingsTotalPnl').textContent = totalCostTwd>0
+      ? (totalPnlTwd>=0?'+':'') + fmtFull(totalPnlTwd) + ' TWD (' + (totalPnlTwd/totalCostTwd*100).toFixed(1) + '%)'
       : '—';
 
-    return totalValue;
+    return totalValueTwd;
   }
 
   function currentStockValue(){
-    return holdings.reduce((s,h)=> s + ((h.price!==null && h.price!==undefined) ? h.shares*h.price : 0), 0);
+    const fx = getFxRate();
+    return holdings.reduce((s,h)=>{
+      const mul = (h.market==='US') ? fx : 1;
+      const v = (h.price!==null && h.price!==undefined) ? h.shares*h.price*mul : 0;
+      return s+v;
+    }, 0);
   }
 
   /* ================= 股價抓取 ================= */
@@ -676,6 +727,59 @@
     return null;
   }
 
+  async function fetchTextWithFallback(url){
+    try{
+      const res = await fetchWithTimeout(url, 6000);
+      if(res.ok) return { text: await res.text(), via:'direct' };
+    }catch(e){ /* 直連失敗, 往下走 proxy */ }
+
+    for(const buildProxyUrl of CORS_PROXIES){
+      try{
+        const res = await fetchWithTimeout(buildProxyUrl(url), 8000);
+        if(res.ok){
+          const text = await res.text();
+          if(text) return { text, via:'proxy' };
+        }
+      }catch(e){ /* 換下一個 proxy */ }
+    }
+    return null;
+  }
+
+  // 美股單一代碼報價: 先試 Yahoo Finance chart API, 失敗再試 Stooq CSV
+  async function fetchUsQuote(code){
+    const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(code)}?interval=1d&range=1d`;
+    const yRes = await fetchJsonWithFallback(yUrl);
+    if(yRes && yRes.data){
+      const meta = yRes.data?.chart?.result?.[0]?.meta;
+      const price = meta?.regularMarketPrice ?? meta?.previousClose;
+      if(price!==undefined && price!==null && !isNaN(price)){
+        return { price: parseFloat(price), name: meta.longName || meta.shortName || code.toUpperCase(), via: yRes.via, provider:'Yahoo' };
+      }
+    }
+    // fallback: Stooq
+    const sUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(code.toLowerCase())}.us&f=sd2t2ohlcv&h&e=csv`;
+    const sRes = await fetchTextWithFallback(sUrl);
+    if(sRes && sRes.text){
+      const lines = sRes.text.trim().split('\n');
+      if(lines.length>=2){
+        const cols = lines[1].split(',');
+        const close = parseFloat(cols[6]);
+        if(!isNaN(close)){
+          return { price: close, name: code.toUpperCase(), via: sRes.via, provider:'Stooq' };
+        }
+      }
+    }
+    return null;
+  }
+
+  async function fetchFxRate(){
+    const res = await fetchJsonWithFallback('https://open.er-api.com/v6/latest/USD');
+    if(res && res.data && res.data.rates && res.data.rates.TWD){
+      return parseFloat(res.data.rates.TWD);
+    }
+    return null;
+  }
+
   async function fetchAllPrices(){
     const statusEl = $('fetchStatus');
     statusEl.className = 'fetch-status';
@@ -685,62 +789,91 @@
     let twseOk = false, tpexOk = false;
     let usedProxy = false;
 
-    const twseResult = await fetchJsonWithFallback('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL');
-    if(twseResult && Array.isArray(twseResult.data)){
-      twseResult.data.forEach(row=>{
-        if(row.Code){
-          twseMap[row.Code] = { name: row.Name, price: parseFloat(row.ClosingPrice) };
-        }
-      });
-      twseOk = true;
-      if(twseResult.via==='proxy') usedProxy = true;
-    }
+    const twStockCodes = holdings.filter(h=>(h.market||'TW')==='TW' && h.code);
+    const usStockCodes = holdings.filter(h=>h.market==='US' && h.code);
 
-    const tpexResult = await fetchJsonWithFallback('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes');
-    if(tpexResult && Array.isArray(tpexResult.data)){
-      tpexResult.data.forEach(row=>{
-        const code = row.SecuritiesCompanyCode || row.CompanyCode || row.Code || row['證券代號'];
-        const name = row.CompanyName || row.Name || row['證券名稱'];
-        const closeRaw = row.Close || row.ClosingPrice || row['收盤價'];
-        const close = parseFloat(closeRaw);
-        if(code && !isNaN(close)){
-          tpexMap[code] = { name: name||'', price: close };
-        }
-      });
-      tpexOk = true;
-      if(tpexResult.via==='proxy') usedProxy = true;
+    // ---- 匯率 ----
+    const fxRate = await fetchFxRate();
+    if(fxRate){ $('usdTwdRate').value = fxRate.toFixed(3); scheduleSaveConfig(); }
+
+    // ---- 台股 (僅在有台股持股時才呼叫) ----
+    if(twStockCodes.length){
+      const twseResult = await fetchJsonWithFallback('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL');
+      if(twseResult && Array.isArray(twseResult.data)){
+        twseResult.data.forEach(row=>{
+          if(row.Code){ twseMap[row.Code] = { name: row.Name, price: parseFloat(row.ClosingPrice) }; }
+        });
+        twseOk = true;
+        if(twseResult.via==='proxy') usedProxy = true;
+      }
+
+      const tpexResult = await fetchJsonWithFallback('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes');
+      if(tpexResult && Array.isArray(tpexResult.data)){
+        tpexResult.data.forEach(row=>{
+          const code = row.SecuritiesCompanyCode || row.CompanyCode || row.Code || row['證券代號'];
+          const name = row.CompanyName || row.Name || row['證券名稱'];
+          const closeRaw = row.Close || row.ClosingPrice || row['收盤價'];
+          const close = parseFloat(closeRaw);
+          if(code && !isNaN(close)){ tpexMap[code] = { name: name||'', price: close }; }
+        });
+        tpexOk = true;
+        if(tpexResult.via==='proxy') usedProxy = true;
+      }
     }
 
     let matched = 0, unmatched = 0;
-    holdings.forEach(h=>{
-      if(!h.code) return;
+    let usOk = usStockCodes.length===0; // 沒有美股持股就視為不需要美股來源
+
+    for(const h of holdings){
+      if(!h.code) continue;
       const code = h.code.trim();
-      if(twseMap[code]){
-        h.price = twseMap[code].price;
-        h.name = twseMap[code].name;
-        h.source = '上市(TWSE) · ' + new Date().toLocaleDateString('zh-TW');
-        matched++;
-      } else if(tpexMap[code]){
-        h.price = tpexMap[code].price;
-        h.name = tpexMap[code].name;
-        h.source = '上櫃(TPEx) · ' + new Date().toLocaleDateString('zh-TW');
-        matched++;
-      } else {
-        h.source = '找不到，請手動輸入';
-        unmatched++;
+      if((h.market||'TW')==='TW'){
+        if(twseMap[code]){
+          h.price = twseMap[code].price; h.name = twseMap[code].name;
+          h.source = '上市(TWSE) · ' + new Date().toLocaleDateString('zh-TW');
+          matched++;
+        } else if(tpexMap[code]){
+          h.price = tpexMap[code].price; h.name = tpexMap[code].name;
+          h.source = '上櫃(TPEx) · ' + new Date().toLocaleDateString('zh-TW');
+          matched++;
+        } else {
+          h.source = '找不到，請手動輸入'; unmatched++;
+        }
+      } else { // 美股, 逐檔查詢
+        const q = await fetchUsQuote(code);
+        if(q){
+          h.price = q.price; h.name = q.name;
+          h.source = q.provider + ' · ' + new Date().toLocaleDateString('zh-TW');
+          if(q.via==='proxy') usedProxy = true;
+          usOk = true;
+          matched++;
+        } else {
+          h.source = '找不到，請手動輸入'; unmatched++;
+        }
       }
-    });
+    }
 
     await saveHoldings();
     renderHoldings();
     computeAll();
 
-    if(!twseOk && !tpexOk){
+    const twNeeded = twStockCodes.length>0;
+    const twFailed = twNeeded && !twseOk && !tpexOk;
+    const usNeeded = usStockCodes.length>0;
+    const usFailed = usNeeded && !usOk;
+
+    if(twFailed && usFailed){
       statusEl.className = 'fetch-status err';
-      statusEl.textContent = '無法自動連線（直連與 Proxy 皆失敗），請手動輸入股價';
+      statusEl.textContent = '台股與美股皆無法自動連線，請手動輸入股價';
+    } else if(twFailed){
+      statusEl.className = 'fetch-status err';
+      statusEl.textContent = '台股來源無法連線，美股已更新，台股請手動輸入';
+    } else if(usFailed){
+      statusEl.className = 'fetch-status err';
+      statusEl.textContent = '美股來源無法連線，台股已更新，美股請手動輸入';
     } else {
       statusEl.className = 'fetch-status ok';
-      statusEl.textContent = `已更新 ${matched} 檔${unmatched? '，' + unmatched + ' 檔查無資料' : ''}${usedProxy? '（經 Proxy 轉發）':''} · ${new Date().toLocaleTimeString('zh-TW')}`;
+      statusEl.textContent = `已更新 ${matched} 檔${unmatched? '，' + unmatched + ' 檔查無資料' : ''}${usedProxy? '（部分經 Proxy 轉發）':''}${fxRate? ' ・ 匯率 '+fxRate.toFixed(2):''} · ${new Date().toLocaleTimeString('zh-TW')}`;
     }
   }
 
@@ -908,8 +1041,8 @@
   }
 
   /* ================= 綁定事件 ================= */
-  ['birthDate','retireAge','curCash','monthlyDca','annualReturn','firstYearExpense','inflation'].forEach(id=>{
-    $(id).addEventListener('input', ()=>{ scheduleSaveConfig(); computeAll(); });
+  ['birthDate','retireAge','curCash','monthlyDca','annualReturn','firstYearExpense','inflation','usdTwdRate'].forEach(id=>{
+    $(id).addEventListener('input', ()=>{ scheduleSaveConfig(); renderHoldings(); computeAll(); });
   });
 
   $('btnAddRow').addEventListener('click', ()=> addHolding());

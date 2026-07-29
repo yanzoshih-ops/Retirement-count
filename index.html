@@ -641,27 +641,45 @@
 
   /* ================= 股價抓取 ================= */
 
-  // 依序嘗試: 1) 直接呼叫  2) 透過公開 CORS Proxy 轉發
+  // 依序嘗試: 1) 直接呼叫  2) 多個公開 CORS Proxy 輪流嘗試(任一成功即採用)
   // 部署在 github.io 等網域時, TWSE/TPEx 通常會擋跨網域請求, 此時自動改走 proxy。
+  const CORS_PROXIES = [
+    url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
+    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    url => 'https://thingproxy.freeboard.io/fetch/' + url,
+  ];
+
+  async function fetchWithTimeout(url, ms){
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), ms);
+    try{
+      const res = await fetch(url, {signal: ctrl.signal});
+      return res;
+    } finally { clearTimeout(t); }
+  }
+
   async function fetchJsonWithFallback(url){
     try{
-      const res = await fetch(url);
-      if(res.ok) return { data: await res.json(), viaProxy:false };
+      const res = await fetchWithTimeout(url, 6000);
+      if(res.ok) return { data: await res.json(), via:'direct' };
     }catch(e){ /* 直連失敗, 往下走 proxy */ }
 
-    try{
-      const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-      const res2 = await fetch(proxyUrl);
-      if(res2.ok) return { data: await res2.json(), viaProxy:true };
-    }catch(e){ /* proxy 也失敗 */ }
-
+    for(const buildProxyUrl of CORS_PROXIES){
+      try{
+        const res = await fetchWithTimeout(buildProxyUrl(url), 8000);
+        if(res.ok){
+          const data = await res.json();
+          if(data) return { data, via:'proxy' };
+        }
+      }catch(e){ /* 這個 proxy 失敗, 換下一個 */ }
+    }
     return null;
   }
 
   async function fetchAllPrices(){
     const statusEl = $('fetchStatus');
     statusEl.className = 'fetch-status';
-    statusEl.textContent = '抓取中…';
+    statusEl.textContent = '抓取中…（若走備援 Proxy 可能需要數秒）';
 
     let twseMap = {}, tpexMap = {};
     let twseOk = false, tpexOk = false;
@@ -675,7 +693,7 @@
         }
       });
       twseOk = true;
-      if(twseResult.viaProxy) usedProxy = true;
+      if(twseResult.via==='proxy') usedProxy = true;
     }
 
     const tpexResult = await fetchJsonWithFallback('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes');
@@ -690,7 +708,7 @@
         }
       });
       tpexOk = true;
-      if(tpexResult.viaProxy) usedProxy = true;
+      if(tpexResult.via==='proxy') usedProxy = true;
     }
 
     let matched = 0, unmatched = 0;

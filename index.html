@@ -106,11 +106,18 @@
     min-height:100vh;
   }
   .wrap{max-width:1040px;margin:0 auto;padding:48px 24px 100px;}
+  @media (max-width:700px){ .wrap{padding:28px 16px 80px;} }
+  @media (max-width:380px){ .wrap{padding:20px 12px 64px;} }
 
   /* ---------- auth bar ---------- */
   .auth-bar{
     display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
     padding-bottom:18px;margin-bottom:8px;border-bottom:1px solid var(--line);
+  }
+  @media (max-width:560px){
+    .auth-bar{flex-direction:column;align-items:stretch;}
+    .auth-bar > div{display:flex;gap:8px;}
+    .auth-bar > div .btn{flex:1;justify-content:center;}
   }
   .auth-status{
     display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--text-dim);
@@ -164,9 +171,11 @@
       repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(255,255,255,0.012) 28px);
     pointer-events:none;
   }
-  @media (max-width:700px){ .hero{grid-template-columns:1fr; text-align:center;} }
+  @media (max-width:700px){ .hero{grid-template-columns:1fr; text-align:center; padding:26px 20px; gap:24px;} }
+  @media (max-width:380px){ .hero{padding:20px 14px; border-radius:4px;} }
 
   .dial-holder{position:relative;width:220px;height:220px;margin:0 auto;}
+  @media (max-width:480px){ .dial-holder{width:170px;height:170px;} }
   .dial-holder svg{width:100%;height:100%;transform:rotate(-90deg);}
   .dial-track{fill:none;stroke:var(--line);stroke-width:8;}
   .dial-progress{fill:none;stroke:var(--gold);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.6s ease;}
@@ -176,6 +185,7 @@
     text-align:center;
   }
   .dial-pct{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--paper);}
+  @media (max-width:480px){ .dial-pct{font-size:26px;} }
   .dial-label{font-family:var(--mono);font-size:10.5px;letter-spacing:0.14em;color:var(--text-faint);text-transform:uppercase;margin-top:4px;}
   .dial-since{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:12px;}
 
@@ -191,13 +201,16 @@
 
   /* ---------- section titles ---------- */
   .section{margin-top:52px;}
+  @media (max-width:700px){ .section{margin-top:36px;} }
   .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
   .section-head h2{
     font-family:var(--serif);font-size:20px;font-weight:600;color:var(--paper);margin:0;
     display:flex;align-items:center;gap:10px;
   }
+  @media (max-width:480px){ .section-head h2{font-size:17px;} }
   .section-head h2 .idx{font-family:var(--mono);color:var(--gold);font-size:13px;}
   .section-note{font-size:12.5px;color:var(--text-faint);font-family:var(--mono);}
+  @media (max-width:480px){ .section-note{font-size:11px;} }
 
   /* ---------- cards / inputs ---------- */
   .card{
@@ -206,6 +219,8 @@
     border-radius:6px;
     padding:28px;
   }
+  @media (max-width:700px){ .card{padding:20px 18px;} }
+  @media (max-width:380px){ .card{padding:16px 14px;} }
   .grid-inputs{
     display:grid;
     grid-template-columns:repeat(4,1fr);
@@ -243,7 +258,10 @@
   .fetch-status.err{color:var(--red);}
   .fetch-status.ok{color:var(--teal);}
 
-  table.holdings{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;}
+  .scroll-hint{display:none;font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-bottom:8px;}
+  @media (max-width:700px){ .scroll-hint{display:block;} }
+  table.holdings{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;min-width:760px;}
+  @media (max-width:700px){ table.holdings{font-size:12px;} }
   table.holdings thead th{
     text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
     color:var(--text-faint);border-bottom:1px solid var(--line);
@@ -291,7 +309,9 @@
 
   /* ---------- chart ---------- */
   .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:24px 20px 12px;}
+  @media (max-width:700px){ .chart-card{padding:18px 12px 10px;} }
   .legend-row{display:flex;gap:22px;margin-bottom:8px;padding-left:6px;flex-wrap:wrap;}
+  @media (max-width:480px){ .legend-row{gap:14px;padding-left:2px;} }
   .legend-item{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
   .legend-swatch{width:14px;height:3px;border-radius:2px;}
 
@@ -318,7 +338,9 @@
     text-align:center; transform:rotate(-14deg); opacity:0.75;
     line-height:1.2;
   }
-  table.ledger{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;margin-top:8px;}
+  table.ledger{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;margin-top:8px;min-width:640px;}
+  @media (max-width:700px){ table.ledger{font-size:12px;} }
+  .ledger-scroll{overflow-x:auto;}
   table.ledger thead th{
     text-align:left;padding:10px 16px 10px 46px;font-size:10.5px;letter-spacing:0.08em;
     text-transform:uppercase;color:#7a6f57;border-bottom:1px solid rgba(0,0,0,0.18);
@@ -345,6 +367,57 @@
     border-top:1px solid var(--line);padding-top:20px;font-family:var(--mono);
     line-height:1.8;
   }
+
+  /* ---------- 人生事件規劃 ---------- */
+  .event-toggle{
+    display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--text-dim);
+    cursor:pointer;user-select:none;
+  }
+  .event-toggle input{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
+  table.holdings input.ev-name{width:120px;}
+  table.holdings input.ev-money{width:110px;}
+  table.holdings input.ev-date{width:130px;color-scheme:dark;}
+  .event-impact{
+    margin-top:20px;padding-top:18px;border-top:1px dashed var(--line);
+    display:flex;gap:32px;flex-wrap:wrap;
+  }
+  .event-impact .imp-item{font-family:var(--mono);font-size:12.5px;color:var(--text-dim);}
+  .event-impact .imp-item b{display:block;font-family:var(--serif);font-size:19px;color:var(--paper);margin-top:4px;font-weight:700;}
+  .event-impact .imp-item b.neg{color:var(--red);}
+  .event-impact .imp-item b.pos{color:var(--teal);}
+  @media (max-width:600px){ .event-impact{gap:20px;} }
+
+  /* ---------- 蒙地卡羅模擬 ---------- */
+  .mc-controls{
+    display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:22px;
+  }
+  .mc-controls .field{min-width:150px;flex:1;}
+  .mc-controls select{
+    width:100%;background:transparent;border:none;border-bottom:1px solid var(--line);outline:none;
+    color:var(--paper);font-family:var(--mono);font-size:14.5px;padding:2px 0 6px;
+  }
+  @media (max-width:560px){ .mc-controls{flex-direction:column;align-items:stretch;} .mc-controls .btn{width:100%;justify-content:center;} }
+
+  .mc-progress-wrap{margin-bottom:20px;}
+  .mc-progress-track{height:4px;background:var(--panel-2);border-radius:3px;overflow:hidden;}
+  .mc-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));transition:width .15s linear;}
+  .mc-progress-text{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);margin-top:8px;}
+
+  .mc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  @media (max-width:820px){ .mc-summary{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:420px){ .mc-summary{grid-template-columns:1fr;} }
+  .mc-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:14px 16px;}
+  .mc-stat-label{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);letter-spacing:0.03em;margin-bottom:6px;}
+  .mc-stat-value{font-family:var(--serif);font-weight:700;font-size:21px;color:var(--paper);}
+  .mc-stat-value.good{color:var(--teal);}
+  .mc-stat-value.warn{color:var(--red);}
+
+  .mc-year-explorer{margin-top:26px;padding-top:22px;border-top:1px dashed var(--line);}
+  .mc-slider-label{display:block;font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:10px;}
+  .mc-slider-label b{color:var(--gold-bright);}
+  #mcYearSlider{width:100%;accent-color:var(--gold);margin-bottom:14px;cursor:pointer;}
+
+  .mc-hint{font-family:var(--mono);font-size:12px;color:var(--text-faint);text-align:center;padding:18px 0;}
 </style>
 </head>
 <body>
@@ -412,6 +485,7 @@
         <div class="fetch-status" id="fetchStatus">尚未抓取</div>
       </div>
 
+      <div class="scroll-hint">← 左右滑動可查看完整欄位 →</div>
       <div style="overflow-x:auto;">
       <table class="holdings">
         <thead>
@@ -488,10 +562,51 @@
     </div>
   </div>
 
+  <!-- ============ 人生事件規劃 ============ -->
+  <div class="section">
+    <div class="section-head">
+      <h2><span class="idx">03</span> 人生事件規劃（大額支出／貸款）</h2>
+      <div class="section-note">模擬購車、購屋等頭期款＋每月分期，觀察對整體退休規劃的影響</div>
+    </div>
+    <div class="card">
+      <div class="holdings-toolbar">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+          <button class="btn primary" id="btnAddEvent">＋ 新增事件</button>
+          <label class="event-toggle"><input type="checkbox" id="eventsEnabled" checked> 套用於下方所有計算</label>
+        </div>
+      </div>
+
+      <div class="scroll-hint">← 左右滑動可查看完整欄位 →</div>
+      <div style="overflow-x:auto;">
+      <table class="holdings" id="eventsTable">
+        <thead>
+          <tr>
+            <th style="width:130px;">事件名稱</th>
+            <th style="width:120px;">一次性支出</th>
+            <th style="width:140px;">發生月份</th>
+            <th style="width:120px;">每月支出</th>
+            <th style="width:140px;">起始月份</th>
+            <th style="width:140px;">結束月份（留空＝到退休）</th>
+            <th style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="eventsBody"></tbody>
+      </table>
+      </div>
+      <div class="holdings-empty" id="eventsEmpty" style="display:none;">尚未新增任何事件。例如：今天要買車，可新增「購車」事件，填入頭期款與每月車貸，觀察是否影響整體退休規劃。</div>
+
+      <div class="event-impact" id="eventImpact" style="display:none;">
+        <div class="imp-item">對退休當日資產的影響<b id="impactAsset">—</b></div>
+        <div class="imp-item">對退休當日提領率的影響<b id="impactSwr">—</b></div>
+        <div class="imp-item">事件總支出（名目金額加總）<b id="impactTotal">—</b></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 關鍵指標 ============ -->
   <div class="section">
     <div class="section-head">
-      <h2><span class="idx">03</span> 關鍵指標</h2>
+      <h2><span class="idx">04</span> 關鍵指標</h2>
       <div class="section-note">依實際持股市值＋現金＋未來假設計算</div>
     </div>
     <div class="metrics">
@@ -521,7 +636,7 @@
   <!-- ============ 資產成長曲線 ============ -->
   <div class="section">
     <div class="section-head">
-      <h2><span class="idx">04</span> 資產成長曲線</h2>
+      <h2><span class="idx">05</span> 資產成長曲線</h2>
       <div class="section-note">計畫路徑 vs 實際填報</div>
     </div>
     <div class="chart-card">
@@ -533,20 +648,82 @@
     </div>
   </div>
 
+  <!-- ============ 蒙地卡羅模擬 ============ -->
+  <div class="section">
+    <div class="section-head">
+      <h2><span class="idx">06</span> 蒙地卡羅模擬</h2>
+      <div class="section-note">加入市場報酬波動，觀察上千種可能路徑的資產分布</div>
+    </div>
+    <div class="card">
+      <div class="mc-controls">
+        <div class="field">
+          <label>年化報酬波動率（標準差）</label>
+          <div class="input-row"><input type="number" step="0.5" id="mcVol" value="15"><span class="suffix">%</span></div>
+        </div>
+        <div class="field">
+          <label>模擬路徑數</label>
+          <select id="mcRuns">
+            <option value="200">200 次（較快）</option>
+            <option value="500" selected>500 次</option>
+            <option value="1000">1000 次</option>
+            <option value="2000">2000 次（較久）</option>
+          </select>
+        </div>
+        <button class="btn primary" id="btnRunMc">▶ 執行模擬</button>
+      </div>
+
+      <div class="mc-progress-wrap" id="mcProgressWrap" style="display:none;">
+        <div class="mc-progress-track"><div class="mc-progress-bar" id="mcProgressBar"></div></div>
+        <div class="mc-progress-text" id="mcProgressText">模擬中…</div>
+      </div>
+
+      <div class="mc-summary" id="mcSummary" style="display:none;">
+        <div class="mc-stat">
+          <div class="mc-stat-label">達成安全提領率（≤4%）機率</div>
+          <div class="mc-stat-value" id="mcSuccessRate">—</div>
+        </div>
+        <div class="mc-stat">
+          <div class="mc-stat-label">退休當日資產中位數</div>
+          <div class="mc-stat-value" id="mcMedian">—</div>
+        </div>
+        <div class="mc-stat">
+          <div class="mc-stat-label">樂觀情境（前 10%）</div>
+          <div class="mc-stat-value good" id="mcP90">—</div>
+        </div>
+        <div class="mc-stat">
+          <div class="mc-stat-label">保守情境（後 10%）</div>
+          <div class="mc-stat-value warn" id="mcP10">—</div>
+        </div>
+      </div>
+
+      <canvas id="mcFanChart" height="240" style="display:none;"></canvas>
+
+      <div class="mc-year-explorer" id="mcYearExplorer" style="display:none;">
+        <label class="mc-slider-label">拖曳滑桿查看指定年度的資產分布：<b id="mcYearLabel">—</b></label>
+        <input type="range" id="mcYearSlider" min="0" max="0" value="0">
+        <canvas id="mcHistChart" height="160"></canvas>
+      </div>
+
+      <div class="mc-hint" id="mcHint">點擊「執行模擬」，依目前的計畫假設與人生事件設定，模擬市場報酬波動下的資產路徑分布（p10 / p25 / 中位數 / p75 / p90）。</div>
+    </div>
+  </div>
+
   <!-- ============ 存摺 ============ -->
   <div class="section">
     <div class="section-head">
-      <h2><span class="idx">05</span> 年度存摺</h2>
+      <h2><span class="idx">07</span> 年度存摺</h2>
       <div class="section-note">可填入實際資產以追蹤達成率</div>
     </div>
     <div class="ledger-card">
       <div class="ledger-stamp">阿爾發<br>存摺</div>
+      <div class="ledger-scroll">
       <table class="ledger">
         <thead>
           <tr><th>年度</th><th>年齡</th><th>計畫資產</th><th>實際資產</th><th>達成率</th><th>狀態</th></tr>
         </thead>
         <tbody id="ledgerBody"></tbody>
       </table>
+      </div>
     </div>
   </div>
 
@@ -564,6 +741,8 @@
   const LEDGER_KEY = 'retirement-ledger-actuals-v1';
   const HOLDINGS_KEY = 'retirement-holdings-v1';
   const PLAN_START_KEY = 'retirement-plan-start-v1';
+  const EVENTS_KEY = 'retirement-life-events-v1';
+  const EVENTS_ENABLED_KEY = 'retirement-events-enabled-v1';
 
   // 儲存層: 已登入 Google 帳號時, 讀取優先走 Firestore(雲端), 寫入同時寫本機+雲端;
   // 未登入時, 完全比照原本行為, 只用瀏覽器的 localStorage。
@@ -593,7 +772,7 @@
     }
   };
 
-  const CLOUD_KEYS = [CONFIG_KEY, LEDGER_KEY, HOLDINGS_KEY, PLAN_START_KEY];
+  const CLOUD_KEYS = [CONFIG_KEY, LEDGER_KEY, HOLDINGS_KEY, PLAN_START_KEY, EVENTS_KEY, EVENTS_ENABLED_KEY];
 
   async function migrateLocalToCloudIfEmpty(){
     for(const key of CLOUD_KEYS){
@@ -627,9 +806,14 @@
 
   let ledgerActuals = {};
   let holdings = []; // {id, code, shares, cost, name, price, source}
+  let lifeEvents = []; // {id, name, oneTime, oneTimeDate, monthly, startDate, endDate}
   let planStartDate = null;
   let chart = null;
   let holdingIdSeq = 1;
+  let eventIdSeq = 1;
+  let mcYearlySamplesCache = null;
+  let mcFanChartInstance = null;
+  let mcHistChart = null;
 
   function defaultBirthDate(){
     const d = new Date();
@@ -698,6 +882,19 @@
       if(psRes && psRes.value){ planStartDate = psRes.value; }
       else { planStartDate = todayStr(); await storage.set(PLAN_START_KEY, planStartDate); }
     }catch(e){ planStartDate = todayStr(); }
+
+    try{
+      const evRes = await storage.get(EVENTS_KEY);
+      if(evRes && evRes.value){
+        lifeEvents = JSON.parse(evRes.value);
+        lifeEvents.forEach(ev=>{ if(ev.id>=eventIdSeq) eventIdSeq = ev.id+1; });
+      } else { lifeEvents = []; }
+    }catch(e){ lifeEvents = []; }
+
+    try{
+      const eeRes = await storage.get(EVENTS_ENABLED_KEY);
+      $('eventsEnabled').checked = eeRes && eeRes.value!==null ? (eeRes.value==='true') : true;
+    }catch(e){ $('eventsEnabled').checked = true; }
   }
 
   let saveTimer = null;
@@ -714,6 +911,8 @@
   }
   async function saveLedger(){ try{ await storage.set(LEDGER_KEY, JSON.stringify(ledgerActuals)); }catch(e){} }
   async function saveHoldings(){ try{ await storage.set(HOLDINGS_KEY, JSON.stringify(holdings)); }catch(e){} }
+  async function saveEvents(){ try{ await storage.set(EVENTS_KEY, JSON.stringify(lifeEvents)); }catch(e){} }
+  async function saveEventsEnabled(){ try{ await storage.set(EVENTS_ENABLED_KEY, $('eventsEnabled').checked ? 'true' : 'false'); }catch(e){} }
 
   /* ================= 持股表格 ================= */
   function addHolding(prefill){
@@ -823,6 +1022,117 @@
       const v = (h.price!==null && h.price!==undefined) ? h.shares*h.price*mul : 0;
       return s+v;
     }, 0);
+  }
+
+  /* ================= 人生事件（大額支出／貸款） ================= */
+  function addEvent(prefill){
+    lifeEvents.push(Object.assign({
+      id: eventIdSeq++, name:'', oneTime:0, oneTimeDate:'', monthly:0, startDate:'', endDate:''
+    }, prefill||{}));
+    saveEvents();
+    renderEvents();
+  }
+
+  function renderEvents(){
+    const tbody = $('eventsBody');
+    tbody.innerHTML = '';
+    $('eventsEmpty').style.display = lifeEvents.length ? 'none' : 'block';
+
+    lifeEvents.forEach(ev=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input class="ev-name" data-field="name" value="${ev.name||''}" placeholder="例如：購車頭期款"></td>
+        <td><input class="ev-money" type="number" data-field="oneTime" value="${ev.oneTime||''}" placeholder="TWD"></td>
+        <td><input class="ev-date" type="month" data-field="oneTimeDate" value="${ev.oneTimeDate||''}"></td>
+        <td><input class="ev-money" type="number" data-field="monthly" value="${ev.monthly||''}" placeholder="TWD/月"></td>
+        <td><input class="ev-date" type="month" data-field="startDate" value="${ev.startDate||''}"></td>
+        <td><input class="ev-date" type="month" data-field="endDate" value="${ev.endDate||''}"></td>
+        <td><button class="row-del" data-id="${ev.id}" title="刪除">×</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      tr.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('change', (e)=>{
+          const field = e.target.dataset.field;
+          let v = e.target.value;
+          if(field==='oneTime' || field==='monthly'){ v = v==='' ? 0 : parseFloat(v); }
+          ev[field] = v;
+          saveEvents();
+          computeAll();
+        });
+      });
+      tr.querySelector('.row-del').addEventListener('click', ()=>{
+        lifeEvents = lifeEvents.filter(x=>x.id!==ev.id);
+        saveEvents();
+        renderEvents();
+        computeAll();
+      });
+    });
+  }
+
+  // 將所有人生事件轉換成「每月現金流出」陣列，index 0 代表本月，最多至 totalMonths-1
+  function computeEventCashflows(totalMonths, applyEvents){
+    const flows = new Array(Math.max(0,totalMonths)).fill(0);
+    if(!applyEvents) return flows;
+    const now = new Date();
+    const baseYear = now.getFullYear(), baseMonth = now.getMonth();
+    function monthIndexOf(dateStr){
+      if(!dateStr) return null;
+      const parts = dateStr.split('-');
+      if(parts.length<2) return null;
+      const y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1;
+      if(isNaN(y)||isNaN(m)) return null;
+      return (y-baseYear)*12 + (m-baseMonth);
+    }
+    lifeEvents.forEach(ev=>{
+      const oneTime = parseFloat(ev.oneTime)||0;
+      const monthly = parseFloat(ev.monthly)||0;
+      if(oneTime>0 && ev.oneTimeDate){
+        const idx = monthIndexOf(ev.oneTimeDate);
+        if(idx!==null && idx>=0 && idx<totalMonths) flows[idx] += oneTime;
+      }
+      if(monthly>0 && ev.startDate){
+        const startIdx = monthIndexOf(ev.startDate);
+        if(startIdx!==null){
+          const endIdx = ev.endDate ? monthIndexOf(ev.endDate) : (totalMonths-1);
+          const s = Math.max(0, startIdx);
+          const e = Math.min(totalMonths-1, (endIdx===null? totalMonths-1 : endIdx));
+          for(let i=s; i<=e; i++){ flows[i] += monthly; }
+        }
+      }
+    });
+    return flows;
+  }
+
+  function eventsHaveContent(){
+    return lifeEvents.some(ev => (parseFloat(ev.oneTime)||0)>0 || (parseFloat(ev.monthly)||0)>0);
+  }
+
+  function renderEventImpact(buildPlanFn, expenseAtRetirement, totalYears){
+    const impactEl = $('eventImpact');
+    if(!eventsHaveContent()){ impactEl.style.display='none'; return; }
+
+    const planWith = buildPlanFn(true);
+    const planWithout = buildPlanFn(false);
+    const finalWith = planWith[planWith.length-1].balance;
+    const finalWithout = planWithout[planWithout.length-1].balance;
+    const deltaAsset = finalWith - finalWithout;
+    const swrWith = finalWith>0 ? expenseAtRetirement/finalWith*100 : 0;
+    const swrWithout = finalWithout>0 ? expenseAtRetirement/finalWithout*100 : 0;
+    const deltaSwr = swrWith - swrWithout;
+    const flows = computeEventCashflows(totalYears*12, true);
+    const totalSpent = flows.reduce((s,v)=>s+v, 0);
+
+    const impactAssetEl = $('impactAsset');
+    impactAssetEl.textContent = (deltaAsset>=0?'+':'') + fmtMoney(deltaAsset);
+    impactAssetEl.className = deltaAsset<0 ? 'neg' : 'pos';
+
+    const impactSwrEl = $('impactSwr');
+    impactSwrEl.textContent = (deltaSwr>=0?'+':'') + deltaSwr.toFixed(2) + ' 百分點';
+    impactSwrEl.className = deltaSwr>0 ? 'neg' : 'pos';
+
+    $('impactTotal').textContent = fmtMoney(totalSpent);
+    impactEl.style.display='flex';
   }
 
   /* ================= 股價抓取 ================= */
@@ -1057,20 +1367,31 @@
     $('dialPct').textContent = pctElapsed.toFixed(1)+'%';
     $('dialSince').textContent = '起算：' + (planStartDate||todayStr());
 
-    // ---- 未來計畫路徑（月複利） ----
+    // ---- 未來計畫路徑（月複利，可套用人生事件現金流） ----
     const totalMonths = monthsBetween(birth, targetDate);
     const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
     const totalYears = Math.max(1, Math.ceil(totalMonths/12));
+    const applyEvents = $('eventsEnabled') ? $('eventsEnabled').checked : false;
 
-    let balance = curStock;
-    const yearlyPlan = [{yearIdx:0, age: Math.floor(curAgeExact), balance: curStock + cfg.curCash}];
-    for(let y=1; y<=totalYears; y++){
-      for(let i=0;i<12;i++){
-        balance += cfg.monthlyDca;
-        balance *= (1+monthlyRate);
+    function buildPlan(withEvents){
+      const flows = computeEventCashflows(totalYears*12, withEvents);
+      let bal = curStock;
+      const plan = [{yearIdx:0, age: Math.floor(curAgeExact), balance: curStock + cfg.curCash}];
+      let mIdx = 0;
+      for(let y=1; y<=totalYears; y++){
+        for(let i=0;i<12;i++){
+          bal += cfg.monthlyDca;
+          bal -= (flows[mIdx]||0);
+          if(bal<0) bal = 0;
+          bal *= (1+monthlyRate);
+          mIdx++;
+        }
+        plan.push({yearIdx:y, age: Math.floor(curAgeExact)+y, balance: bal + cfg.curCash});
       }
-      yearlyPlan.push({yearIdx:y, age: Math.floor(curAgeExact)+y, balance: balance + cfg.curCash});
+      return plan;
     }
+
+    const yearlyPlan = buildPlan(applyEvents);
 
     const finalAsset = yearlyPlan[yearlyPlan.length-1].balance;
     const contributed = cfg.monthlyDca * totalMonths;
@@ -1093,6 +1414,8 @@
     const progressPct = planAtNow>0 ? (curActual/planAtNow*100) : 100;
     $('metricProgress').textContent = progressPct.toFixed(0)+'%';
     $('metricProgressSub').textContent = '今日實際 ' + fmtMoney(curActual) + ' / 計畫 ' + fmtMoney(planAtNow);
+
+    renderEventImpact(buildPlan, expenseAtRetirement, totalYears);
 
     renderChart(yearlyPlan);
     renderLedger(yearlyPlan);
@@ -1175,6 +1498,183 @@
     });
   }
 
+  /* ================= 蒙地卡羅模擬 ================= */
+  function boxMullerRandom(){
+    let u=0, v=0;
+    while(u===0) u = Math.random();
+    while(v===0) v = Math.random();
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  }
+
+  function percentileOf(sortedArr, p){
+    const idx = Math.min(sortedArr.length-1, Math.max(0, Math.round(p*(sortedArr.length-1))));
+    return sortedArr[idx];
+  }
+
+  async function runMonteCarlo(){
+    const cfg = readInputs();
+    const curStock = currentStockValue();
+    const birth = new Date(cfg.birthDate);
+    const targetDate = new Date(birth);
+    targetDate.setFullYear(birth.getFullYear() + cfg.retireAge);
+    const totalMonths = monthsBetween(birth, targetDate);
+    const totalYears = Math.max(1, Math.ceil(totalMonths/12));
+    const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
+    const annualVol = Math.max(0, parseFloat($('mcVol').value) || 15) / 100;
+    const monthlyVol = annualVol / Math.sqrt(12);
+    const runs = parseInt($('mcRuns').value, 10) || 500;
+    const applyEvents = $('eventsEnabled') ? $('eventsEnabled').checked : false;
+    const eventFlows = computeEventCashflows(totalYears*12, applyEvents);
+    const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
+
+    $('btnRunMc').disabled = true;
+    $('mcHint').style.display = 'none';
+    $('mcProgressWrap').style.display = 'block';
+    $('mcProgressBar').style.width = '0%';
+    $('mcSummary').style.display = 'none';
+    $('mcFanChart').style.display = 'none';
+    $('mcYearExplorer').style.display = 'none';
+
+    const yearlySamples = [];
+    for(let y=0; y<=totalYears; y++) yearlySamples.push([]);
+    const finalBalances = [];
+
+    const batchSize = Math.max(1, Math.round(runs/25));
+    let completed = 0;
+
+    await new Promise(resolve=>{
+      function processBatch(){
+        const end = Math.min(runs, completed+batchSize);
+        for(; completed<end; completed++){
+          let bal = curStock;
+          yearlySamples[0].push(curStock + cfg.curCash);
+          let mIdx = 0;
+          for(let y=1; y<=totalYears; y++){
+            for(let i=0;i<12;i++){
+              const shock = boxMullerRandom() * monthlyVol;
+              const r = monthlyRate + shock;
+              bal += cfg.monthlyDca;
+              bal -= (eventFlows[mIdx]||0);
+              if(bal<0) bal = 0;
+              bal *= (1+r);
+              mIdx++;
+            }
+            yearlySamples[y].push(bal + cfg.curCash);
+          }
+          finalBalances.push(bal + cfg.curCash);
+        }
+        const pct = Math.round(completed/runs*100);
+        $('mcProgressBar').style.width = pct+'%';
+        $('mcProgressText').textContent = `模擬中… ${completed}/${runs} 條路徑`;
+        if(completed<runs){ setTimeout(processBatch, 0); }
+        else { resolve(); }
+      }
+      processBatch();
+    });
+
+    $('btnRunMc').disabled = false;
+    $('mcProgressWrap').style.display = 'none';
+
+    const yearsLabels=[], p10=[], p25=[], p50=[], p75=[], p90=[];
+    for(let y=0; y<=totalYears; y++){
+      yearsLabels.push('第 '+y+' 年');
+      const sorted = [...yearlySamples[y]].sort((a,b)=>a-b);
+      p10.push(percentileOf(sorted,0.10));
+      p25.push(percentileOf(sorted,0.25));
+      p50.push(percentileOf(sorted,0.50));
+      p75.push(percentileOf(sorted,0.75));
+      p90.push(percentileOf(sorted,0.90));
+    }
+
+    const successCount = finalBalances.filter(b => b>0 && (expenseAtRetirement/b*100)<=4.5).length;
+    const successRate = finalBalances.length ? (successCount/finalBalances.length*100) : 0;
+
+    const successEl = $('mcSuccessRate');
+    successEl.textContent = successRate.toFixed(0)+'%';
+    successEl.className = 'mc-stat-value ' + (successRate>=70 ? 'good' : (successRate<40 ? 'warn' : ''));
+    $('mcMedian').textContent = fmtMoney(p50[p50.length-1]);
+    $('mcP90').textContent = fmtMoney(p90[p90.length-1]);
+    $('mcP10').textContent = fmtMoney(p10[p10.length-1]);
+    $('mcSummary').style.display = 'grid';
+
+    renderMcFanChart(yearsLabels, p10, p25, p50, p75, p90);
+    $('mcFanChart').style.display = 'block';
+
+    mcYearlySamplesCache = yearlySamples;
+    const slider = $('mcYearSlider');
+    slider.min = 0;
+    slider.max = totalYears;
+    slider.value = totalYears;
+    $('mcYearExplorer').style.display = 'block';
+    updateMcHistogram(totalYears);
+  }
+
+  function renderMcFanChart(labels, p10, p25, p50, p75, p90){
+    const ctx = document.getElementById('mcFanChart').getContext('2d');
+    if(mcFanChartInstance) mcFanChartInstance.destroy();
+    mcFanChartInstance = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          { label:'保守（後10%）', data:p10, borderColor:'rgba(201,162,39,0)', backgroundColor:'rgba(201,162,39,0.09)', borderWidth:0, pointRadius:0, fill:false, tension:0.2 },
+          { label:'10–90% 區間', data:p90, borderColor:'rgba(201,162,39,0.35)', backgroundColor:'rgba(201,162,39,0.12)', borderWidth:1, pointRadius:0, fill:'-1', tension:0.2 },
+          { label:'25%分位', data:p25, borderColor:'rgba(201,162,39,0)', backgroundColor:'rgba(201,162,39,0)', borderWidth:0, pointRadius:0, fill:false, tension:0.2 },
+          { label:'25–75% 區間', data:p75, borderColor:'rgba(201,162,39,0.45)', backgroundColor:'rgba(201,162,39,0.24)', borderWidth:1, pointRadius:0, fill:'-1', tension:0.2 },
+          { label:'中位數路徑', data:p50, borderColor:'#e8c765', backgroundColor:'transparent', borderWidth:2.5, pointRadius:0, fill:false, tension:0.2 },
+        ]
+      },
+      options:{
+        responsive:true,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ display:true, labels:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10.5}, filter:(item)=> item.text!=='保守（後10%）' && item.text!=='25%分位' } },
+          tooltip:{ callbacks:{ label:(c)=> c.dataset.label+': '+ (c.raw!==null? fmtMoney(c.raw):'—') } }
+        },
+        scales:{
+          x:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, maxRotation:60, autoSkip:true, maxTicksLimit:8 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+          y:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, callback:(v)=> fmtMoney(v) }, grid:{ color:'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
+  function updateMcHistogram(yearIdx){
+    if(!mcYearlySamplesCache) return;
+    const arr = mcYearlySamplesCache[yearIdx];
+    $('mcYearLabel').textContent = '第 '+yearIdx+' 年（'+arr.length+' 條模擬路徑）';
+
+    const min = Math.min(...arr), max = Math.max(...arr);
+    const binCount = 16;
+    const binSize = Math.max(1, (max-min)/binCount);
+    const bins = new Array(binCount).fill(0);
+    arr.forEach(v=>{
+      let idx = Math.floor((v-min)/binSize);
+      if(idx>=binCount) idx = binCount-1;
+      if(idx<0) idx = 0;
+      bins[idx]++;
+    });
+    const labels = bins.map((_,i)=> fmtMoney(min+i*binSize));
+
+    const ctx = document.getElementById('mcHistChart').getContext('2d');
+    if(mcHistChart) mcHistChart.destroy();
+    mcHistChart = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ data:bins, backgroundColor:'rgba(79,156,120,0.55)', borderRadius:2, borderWidth:0 }] },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label:(c)=> c.raw+' 條路徑' } }
+        },
+        scales:{
+          x:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:9}, maxRotation:60, autoSkip:true, maxTicksLimit:8 }, grid:{ display:false } },
+          y:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, precision:0 }, grid:{ color:'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
   /* ================= 綁定事件 ================= */
   ['birthDate','retireAge','curCash','monthlyDca','annualReturn','firstYearExpense','inflation','usdTwdRate'].forEach(id=>{
     $(id).addEventListener('input', ()=>{ scheduleSaveConfig(); renderHoldings(); computeAll(); });
@@ -1185,6 +1685,11 @@
   $('btnSignIn').addEventListener('click', ()=> window.__signInWithGoogle && window.__signInWithGoogle());
   $('btnSignOut').addEventListener('click', ()=> window.__signOutUser && window.__signOutUser());
 
+  $('btnAddEvent').addEventListener('click', ()=> addEvent());
+  $('eventsEnabled').addEventListener('change', ()=>{ saveEventsEnabled(); computeAll(); });
+  $('btnRunMc').addEventListener('click', ()=> runMonteCarlo());
+  $('mcYearSlider').addEventListener('input', (e)=> updateMcHistogram(parseInt(e.target.value,10)));
+
   async function reloadAllDataAndRender(){
     await loadStorage();
     if(holdings.length===0){
@@ -1192,6 +1697,7 @@
     } else {
       renderHoldings();
     }
+    renderEvents();
     computeAll();
   }
 
@@ -1215,6 +1721,7 @@
     } else {
       renderHoldings();
     }
+    renderEvents();
     computeAll();
     fetchAllPrices(); // 開啟頁面時自動嘗試抓取一次
 

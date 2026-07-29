@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>50 歲退休倒數 · 存摺</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink: #0e1319;
+    --panel: #171f27;
+    --panel-2: #1d2733;
+    --line: #2a3543;
+    --paper: #ece4d3;
+    --paper-dim: #d9cfb8;
+    --gold: #c9a227;
+    --gold-bright: #e8c765;
+    --teal: #4f9c78;
+    --red: #c1584c;
+    --text: #eae3d4;
+    --text-dim: #8993a1;
+    --text-faint: #55606c;
+    --serif: 'Noto Serif TC', serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Noto Sans TC', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(201,162,39,0.07), transparent 60%),
+      var(--ink);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.6;
+    min-height:100vh;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:48px 24px 100px;}
+
+  /* ---------- header ---------- */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.24em;
+    color:var(--gold);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--gold);display:inline-block;}
+  h1{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:clamp(28px,4.4vw,44px);
+    margin:0 0 6px;
+    color:var(--paper);
+  }
+  .sub{color:var(--text-dim);font-size:14.5px;max-width:60ch;}
+
+  /* ---------- hero: countdown dial ---------- */
+  .hero{
+    margin-top:40px;
+    display:grid;
+    grid-template-columns: 260px 1fr;
+    gap:40px;
+    align-items:center;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:36px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::after{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(255,255,255,0.012) 28px);
+    pointer-events:none;
+  }
+  @media (max-width:700px){ .hero{grid-template-columns:1fr; text-align:center;} }
+
+  .dial-holder{position:relative;width:220px;height:220px;margin:0 auto;}
+  .dial-holder svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .dial-track{fill:none;stroke:var(--line);stroke-width:8;}
+  .dial-progress{fill:none;stroke:var(--gold);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.6s ease;}
+  .dial-center{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;
+  }
+  .dial-pct{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--paper);}
+  .dial-label{font-family:var(--mono);font-size:10.5px;letter-spacing:0.14em;color:var(--text-faint);text-transform:uppercase;margin-top:4px;}
+  .dial-since{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:12px;}
+
+  .countdown-title{font-size:13.5px;color:var(--text-dim);margin-bottom:10px;font-family:var(--sans);}
+  .countdown-figs{display:flex;gap:22px;flex-wrap:wrap;}
+  @media (max-width:700px){.countdown-figs{justify-content:center;}}
+  .cf{text-align:left;}
+  @media (max-width:700px){.cf{text-align:center;}}
+  .cf .num{font-family:var(--serif);font-weight:900;font-size:clamp(30px,5vw,48px);color:var(--paper);line-height:1;}
+  .cf .unit{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:0.1em;margin-top:4px;}
+  .target-line{margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--text-faint);}
+  .target-line b{color:var(--text-dim);font-weight:500;}
+
+  /* ---------- section titles ---------- */
+  .section{margin-top:52px;}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+  .section-head h2{
+    font-family:var(--serif);font-size:20px;font-weight:600;color:var(--paper);margin:0;
+    display:flex;align-items:center;gap:10px;
+  }
+  .section-head h2 .idx{font-family:var(--mono);color:var(--gold);font-size:13px;}
+  .section-note{font-size:12.5px;color:var(--text-faint);font-family:var(--mono);}
+
+  /* ---------- cards / inputs ---------- */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:28px;
+  }
+  .grid-inputs{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+  }
+  @media (max-width:820px){.grid-inputs{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:480px){.grid-inputs{grid-template-columns:1fr;}}
+  .field label{
+    display:block;font-size:11.5px;color:var(--text-faint);
+    font-family:var(--mono);letter-spacing:0.04em;margin-bottom:7px;
+  }
+  .field .input-row{display:flex;align-items:center;border-bottom:1px solid var(--line);padding-bottom:6px;transition:border-color .2s;}
+  .field .input-row:focus-within{border-color:var(--gold);}
+  .field input{
+    width:100%;background:transparent;border:none;outline:none;
+    color:var(--paper);font-family:var(--mono);font-size:15.5px;padding:2px 0;
+  }
+  .field .suffix{font-family:var(--mono);font-size:12px;color:var(--text-faint);white-space:nowrap;padding-left:6px;}
+  .save-hint{margin-top:20px;font-size:11.5px;color:var(--text-faint);font-family:var(--mono);display:flex;align-items:center;gap:8px;}
+  .save-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block;}
+
+  /* ---------- holdings table ---------- */
+  .holdings-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+  .btn{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:0.03em;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--paper);
+    padding:9px 16px;border-radius:4px;cursor:pointer;transition:.15s;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn:hover{border-color:var(--gold);color:var(--gold-bright);}
+  .btn.primary{background:var(--gold);color:#1b1405;border-color:var(--gold);}
+  .btn.primary:hover{background:var(--gold-bright);color:#1b1405;}
+  .btn.ghost{background:transparent;}
+  .fetch-status{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);}
+  .fetch-status.err{color:var(--red);}
+  .fetch-status.ok{color:var(--teal);}
+
+  table.holdings{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;}
+  table.holdings thead th{
+    text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--text-faint);border-bottom:1px solid var(--line);
+  }
+  table.holdings tbody td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+  table.holdings input{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:3px;
+    color:var(--paper);font-family:var(--mono);font-size:13px;padding:6px 8px;outline:none;
+  }
+  table.holdings input:focus{border-color:var(--gold);}
+  table.holdings input.code{width:78px;}
+  table.holdings input.shares, table.holdings input.cost{width:100px;}
+  table.holdings .price-cell{color:var(--paper);}
+  table.holdings .price-cell .src{display:block;font-size:9.5px;color:var(--text-faint);margin-top:2px;}
+  table.holdings .name-cell{color:var(--text-dim);min-width:70px;}
+  table.holdings .pnl.pos{color:var(--teal);}
+  table.holdings .pnl.neg{color:var(--red);}
+  table.holdings .row-del{
+    background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;line-height:1;
+    padding:4px 8px;
+  }
+  table.holdings .row-del:hover{color:var(--red);}
+  table.holdings tfoot td{padding:12px 10px 4px;font-weight:600;color:var(--paper);border-top:1px solid var(--line);}
+  .holdings-empty{padding:24px 10px;color:var(--text-faint);font-family:var(--mono);font-size:12.5px;text-align:center;}
+
+  /* ---------- metric cards ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  @media (max-width:820px){.metrics{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:480px){.metrics{grid-template-columns:1fr;}}
+  .metric{
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    padding:20px 22px;position:relative;
+  }
+  .metric .m-label{font-family:var(--mono);font-size:11px;color:var(--text-faint);letter-spacing:0.04em;margin-bottom:10px;}
+  .metric .m-value{font-family:var(--serif);font-weight:700;font-size:26px;color:var(--paper);}
+  .metric .m-value.small{font-size:20px;}
+  .metric .m-sub{font-size:11.5px;color:var(--text-dim);margin-top:6px;font-family:var(--mono);}
+  .metric.warn .m-value{color:var(--red);}
+  .metric.good .m-value{color:var(--teal);}
+
+  /* ---------- chart ---------- */
+  .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:24px 20px 12px;}
+  .legend-row{display:flex;gap:22px;margin-bottom:8px;padding-left:6px;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+  .legend-swatch{width:14px;height:3px;border-radius:2px;}
+
+  /* ---------- ledger table ---------- */
+  .ledger-card{
+    background:var(--paper);
+    color:#2a2418;
+    border-radius:4px;
+    padding:6px 0 0;
+    box-shadow:0 12px 30px -14px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.06);
+    position:relative;
+    overflow:hidden;
+  }
+  .ledger-card::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:34px;
+    background:repeating-linear-gradient(180deg, transparent 0 16px, rgba(0,0,0,0.05) 16px 17px);
+    border-right:1px dashed rgba(0,0,0,0.15);
+  }
+  .ledger-stamp{
+    position:absolute; top:18px; right:22px;
+    font-family:var(--mono); font-size:11px; letter-spacing:0.12em;
+    color:var(--gold); border:1.5px solid var(--gold); border-radius:50%;
+    width:64px;height:64px; display:flex; align-items:center;justify-content:center;
+    text-align:center; transform:rotate(-14deg); opacity:0.75;
+    line-height:1.2;
+  }
+  table.ledger{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;margin-top:8px;}
+  table.ledger thead th{
+    text-align:left;padding:10px 16px 10px 46px;font-size:10.5px;letter-spacing:0.08em;
+    text-transform:uppercase;color:#7a6f57;border-bottom:1px solid rgba(0,0,0,0.18);
+  }
+  table.ledger thead th:not(:first-child){padding-left:14px;}
+  table.ledger tbody td{padding:9px 14px;border-bottom:1px dotted rgba(0,0,0,0.16);}
+  table.ledger tbody td:first-child{padding-left:46px;font-weight:600;}
+  table.ledger tbody tr:last-child td{border-bottom:none;}
+  table.ledger .actual-input{
+    width:120px;background:transparent;border:none;border-bottom:1px solid rgba(0,0,0,0.3);
+    font-family:var(--mono);font-size:13px;color:#2a2418;padding:2px 2px;
+  }
+  table.ledger .actual-input:focus{outline:none;border-color:var(--gold);}
+  .tag{
+    display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:20px;
+    font-family:var(--mono);
+  }
+  .tag.ontrack{background:rgba(79,156,120,0.16);color:#2f6b4d;}
+  .tag.behind{background:rgba(193,88,76,0.14);color:#a3392f;}
+  .tag.future{background:rgba(0,0,0,0.06);color:#8a8064;}
+
+  footer{
+    margin-top:60px;font-size:12px;color:var(--text-faint);
+    border-top:1px solid var(--line);padding-top:20px;font-family:var(--mono);
+    line-height:1.8;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">私人財富規劃 · 退休倒數存摺</div>
+  <h1>距離 50 歲退休</h1>
+  <div class="sub">依你的實際持股、每月定期定額投入與資產成長假設，即時追蹤退休倒數與資產累積進度。</div>
+
+  <div class="hero">
+    <div class="dial-holder">
+      <svg viewBox="0 0 220 220">
+        <circle class="dial-track" cx="110" cy="110" r="96"></circle>
+        <circle class="dial-progress" id="dialProgress" cx="110" cy="110" r="96"
+                stroke-dasharray="603" stroke-dashoffset="603"></circle>
+      </svg>
+      <div class="dial-center">
+        <div class="dial-pct" id="dialPct">0%</div>
+        <div class="dial-label">追蹤進度</div>
+        <div class="dial-since" id="dialSince">起算：—</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="countdown-title">倒數計時（今天 → 退休日）</div>
+      <div class="countdown-figs">
+        <div class="cf"><div class="num" id="cdYears">--</div><div class="unit">年</div></div>
+        <div class="cf"><div class="num" id="cdMonths">--</div><div class="unit">月</div></div>
+        <div class="cf"><div class="num" id="cdDays">--</div><div class="unit">天</div></div>
+        <div class="cf"><div class="num" id="cdHours">--</div><div class="unit">時</div></div>
+      </div>
+      <div class="target-line">退休日期：<b id="targetDateLabel">—</b> ・ 目前年齡：<b id="curAgeLabel">—</b> 歲</div>
+    </div>
+  </div>
+
+  <!-- ============ 資產組合 ============ -->
+  <div class="section">
+    <div class="section-head">
+      <h2><span class="idx">01</span> 資產組合（真實持股）</h2>
+      <div class="section-note">股價來源：台灣證交所／櫃買中心 OpenAPI（前一交易日收盤）</div>
+    </div>
+    <div class="card">
+      <div class="holdings-toolbar">
+        <div style="display:flex;gap:10px;">
+          <button class="btn primary" id="btnAddRow">＋ 新增持股</button>
+          <button class="btn" id="btnFetch">↻ 重新抓取股價</button>
+        </div>
+        <div class="fetch-status" id="fetchStatus">尚未抓取</div>
+      </div>
+
+      <table class="holdings">
+        <thead>
+          <tr>
+            <th style="width:90px;">代號</th>
+            <th>名稱</th>
+            <th style="width:110px;">股數</th>
+            <th style="width:110px;">每股成本</th>
+            <th style="width:130px;">最新收盤</th>
+            <th style="width:130px;">市值</th>
+            <th style="width:120px;">損益</th>
+            <th style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="holdingsBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">股票市值合計</td>
+            <td></td>
+            <td id="holdingsTotalValue">—</td>
+            <td id="holdingsTotalPnl">—</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="holdings-empty" id="holdingsEmpty" style="display:none;">尚未新增任何持股，點選上方「＋ 新增持股」開始輸入。</div>
+
+      <div class="grid-inputs" style="margin-top:26px;">
+        <div class="field">
+          <label>目前現金</label>
+          <div class="input-row"><input type="number" id="curCash" value="1000000"><span class="suffix">TWD</span></div>
+        </div>
+      </div>
+      <div class="save-hint"><span class="save-dot"></span><span id="saveStatus">已載入本機儲存資料</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 計畫假設 ============ -->
+  <div class="section">
+    <div class="section-head">
+      <h2><span class="idx">02</span> 計畫假設</h2>
+      <div class="section-note">變更後自動儲存</div>
+    </div>
+    <div class="card">
+      <div class="grid-inputs">
+        <div class="field">
+          <label>出生日期</label>
+          <div class="input-row"><input type="date" id="birthDate"></div>
+        </div>
+        <div class="field">
+          <label>目標退休年齡</label>
+          <div class="input-row"><input type="number" id="retireAge" value="50"><span class="suffix">歲</span></div>
+        </div>
+        <div class="field">
+          <label>每月定期定額</label>
+          <div class="input-row"><input type="number" id="monthlyDca" value="40000"><span class="suffix">TWD/月</span></div>
+        </div>
+        <div class="field">
+          <label>預期年化報酬（未來推估用）</label>
+          <div class="input-row"><input type="number" step="0.1" id="annualReturn" value="10"><span class="suffix">%</span></div>
+        </div>
+        <div class="field">
+          <label>退休後首年生活費（今日幣值）</label>
+          <div class="input-row"><input type="number" id="firstYearExpense" value="1000000"><span class="suffix">TWD</span></div>
+        </div>
+        <div class="field">
+          <label>通膨率</label>
+          <div class="input-row"><input type="number" step="0.1" id="inflation" value="2.5"><span class="suffix">%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 關鍵指標 ============ -->
+  <div class="section">
+    <div class="section-head">
+      <h2><span class="idx">03</span> 關鍵指標</h2>
+      <div class="section-note">依實際持股市值＋現金＋未來假設計算</div>
+    </div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="m-label">預估退休當日資產</div>
+        <div class="m-value" id="metricFinalAsset">—</div>
+        <div class="m-sub">股票＋現金，複利推估</div>
+      </div>
+      <div class="metric">
+        <div class="m-label">退休當日初始提領率</div>
+        <div class="m-value" id="metricSwr">—</div>
+        <div class="m-sub" id="metricSwrSub">對照安全基準 ~4%</div>
+      </div>
+      <div class="metric">
+        <div class="m-label">累積投入本金</div>
+        <div class="m-value small" id="metricContributed">—</div>
+        <div class="m-sub">每月定期定額 × 月數</div>
+      </div>
+      <div class="metric">
+        <div class="m-label">目前累積進度</div>
+        <div class="m-value small" id="metricProgress">—</div>
+        <div class="m-sub" id="metricProgressSub">實際 vs 計畫值</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 資產成長曲線 ============ -->
+  <div class="section">
+    <div class="section-head">
+      <h2><span class="idx">04</span> 資產成長曲線</h2>
+      <div class="section-note">計畫路徑 vs 實際填報</div>
+    </div>
+    <div class="chart-card">
+      <div class="legend-row">
+        <div class="legend-item"><span class="legend-swatch" style="background:#c9a227"></span>計畫路徑</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#4f9c78"></span>實際資產（存摺填報）</div>
+      </div>
+      <canvas id="growthChart" height="260"></canvas>
+    </div>
+  </div>
+
+  <!-- ============ 存摺 ============ -->
+  <div class="section">
+    <div class="section-head">
+      <h2><span class="idx">05</span> 年度存摺</h2>
+      <div class="section-note">可填入實際資產以追蹤達成率</div>
+    </div>
+    <div class="ledger-card">
+      <div class="ledger-stamp">阿爾發<br>存摺</div>
+      <table class="ledger">
+        <thead>
+          <tr><th>年度</th><th>年齡</th><th>計畫資產</th><th>實際資產</th><th>達成率</th><th>狀態</th></tr>
+        </thead>
+        <tbody id="ledgerBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    本頁面所有計算基於使用者輸入之假設參數（報酬率、通膨率等）與自動抓取之股價資料，僅供追蹤與情境模擬使用，不構成投資建議。<br>
+    股價資料來源為台灣證交所（TWSE）與證券櫃檯買賣中心（TPEx）之公開 OpenAPI，僅反映最近一個交易日收盤價，可能因網路或跨網域限制無法自動取得，屆時請手動輸入。
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const CONFIG_KEY = 'retirement-config-v2';
+  const LEDGER_KEY = 'retirement-ledger-actuals-v1';
+  const HOLDINGS_KEY = 'retirement-holdings-v1';
+  const PLAN_START_KEY = 'retirement-plan-start-v1';
+
+  // 本機儲存(localStorage)包裝, 介面模擬原本的 storage.get/set,
+  // 資料僅存在「這台裝置、這個瀏覽器」的 localStorage 中, 換裝置或清除瀏覽器資料會遺失。
+  const storage = {
+    async get(key){
+      try{
+        const raw = localStorage.getItem(key);
+        if(raw===null) return null;
+        return { key, value: raw };
+      }catch(e){ return null; }
+    },
+    async set(key, value){
+      try{
+        localStorage.setItem(key, value);
+        return { key, value };
+      }catch(e){ return null; }
+    }
+  };
+
+  let ledgerActuals = {};
+  let holdings = []; // {id, code, shares, cost, name, price, source}
+  let planStartDate = null;
+  let chart = null;
+  let holdingIdSeq = 1;
+
+  function defaultBirthDate(){
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 40);
+    return d.toISOString().slice(0,10);
+  }
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+  function fmtMoney(n){
+    if (n===null || n===undefined || isNaN(n)) return '—';
+    const sign = n<0 ? '-' : '';
+    const abs = Math.abs(n);
+    if(abs >= 10000000) return sign + (abs/10000000).toFixed(2) + ' 千萬';
+    if(abs >= 10000) return sign + (abs/10000).toFixed(0) + ' 萬';
+    return sign + Math.round(abs).toLocaleString();
+  }
+  function fmtFull(n){ if(n===null||n===undefined||isNaN(n)) return '—'; return Math.round(n).toLocaleString(); }
+
+  /* ================= 參數讀寫 ================= */
+  function readInputs(){
+    return {
+      birthDate: $('birthDate').value || defaultBirthDate(),
+      retireAge: parseFloat($('retireAge').value) || 50,
+      curCash: parseFloat($('curCash').value) || 0,
+      monthlyDca: parseFloat($('monthlyDca').value) || 0,
+      annualReturn: (parseFloat($('annualReturn').value) || 0)/100,
+      firstYearExpense: parseFloat($('firstYearExpense').value) || 0,
+      inflation: (parseFloat($('inflation').value) || 0)/100,
+    };
+  }
+  function applyInputs(cfg){
+    if(!cfg) return;
+    $('birthDate').value = cfg.birthDate || defaultBirthDate();
+    $('retireAge').value = cfg.retireAge ?? 50;
+    $('curCash').value = cfg.curCash ?? 1000000;
+    $('monthlyDca').value = cfg.monthlyDca ?? 40000;
+    $('annualReturn').value = cfg.annualReturn!==undefined ? cfg.annualReturn*100 : 10;
+    $('firstYearExpense').value = cfg.firstYearExpense ?? 1000000;
+    $('inflation').value = cfg.inflation!==undefined ? cfg.inflation*100 : 2.5;
+  }
+
+  async function loadStorage(){
+    try{
+      const cfgRes = await storage.get(CONFIG_KEY);
+      if(cfgRes && cfgRes.value){ applyInputs(JSON.parse(cfgRes.value)); }
+      else { $('birthDate').value = defaultBirthDate(); }
+    }catch(e){ $('birthDate').value = defaultBirthDate(); }
+
+    try{
+      const ledgerRes = await storage.get(LEDGER_KEY);
+      if(ledgerRes && ledgerRes.value){ ledgerActuals = JSON.parse(ledgerRes.value); }
+    }catch(e){ ledgerActuals = {}; }
+
+    try{
+      const hRes = await storage.get(HOLDINGS_KEY);
+      if(hRes && hRes.value){
+        holdings = JSON.parse(hRes.value);
+        holdings.forEach(h=>{ if(h.id>=holdingIdSeq) holdingIdSeq = h.id+1; });
+      }
+    }catch(e){ holdings = []; }
+
+    try{
+      const psRes = await storage.get(PLAN_START_KEY);
+      if(psRes && psRes.value){ planStartDate = psRes.value; }
+      else { planStartDate = todayStr(); await storage.set(PLAN_START_KEY, planStartDate); }
+    }catch(e){ planStartDate = todayStr(); }
+  }
+
+  let saveTimer = null;
+  function scheduleSaveConfig(){
+    $('saveStatus').textContent = '儲存中…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async ()=>{
+      try{
+        const cfg = readInputs();
+        await storage.set(CONFIG_KEY, JSON.stringify(cfg));
+        $('saveStatus').textContent = '已自動儲存 · ' + new Date().toLocaleTimeString('zh-TW');
+      }catch(e){ $('saveStatus').textContent = '儲存失敗，請稍後再試'; }
+    }, 500);
+  }
+  async function saveLedger(){ try{ await storage.set(LEDGER_KEY, JSON.stringify(ledgerActuals)); }catch(e){} }
+  async function saveHoldings(){ try{ await storage.set(HOLDINGS_KEY, JSON.stringify(holdings)); }catch(e){} }
+
+  /* ================= 持股表格 ================= */
+  function addHolding(prefill){
+    holdings.push(Object.assign({
+      id: holdingIdSeq++, code:'', name:'', shares:0, cost:0, price:null, source:null
+    }, prefill||{}));
+    saveHoldings();
+    renderHoldings();
+  }
+
+  function renderHoldings(){
+    const tbody = $('holdingsBody');
+    tbody.innerHTML = '';
+    $('holdingsEmpty').style.display = holdings.length ? 'none' : 'block';
+
+    let totalValue = 0, totalCost = 0;
+
+    holdings.forEach(h=>{
+      const value = (h.price!==null && h.price!==undefined) ? h.shares*h.price : 0;
+      const cost = h.shares*h.cost;
+      totalValue += value;
+      totalCost += cost;
+      const pnl = value - cost;
+      const pnlPct = cost>0 ? (pnl/cost*100) : 0;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input class="code" data-field="code" value="${h.code||''}" placeholder="2330"></td>
+        <td class="name-cell">${h.name ? h.name : (h.code ? '<span style="color:var(--text-faint)">未取得</span>' : '—')}</td>
+        <td><input class="shares" type="number" data-field="shares" value="${h.shares||''}" placeholder="股數"></td>
+        <td><input class="cost" type="number" data-field="cost" value="${h.cost||''}" placeholder="成本/股"></td>
+        <td class="price-cell">
+          <input type="number" step="0.01" data-field="price" value="${h.price!==null&&h.price!==undefined?h.price:''}" placeholder="手動輸入">
+          <span class="src">${h.source ? h.source : '尚未抓取'}</span>
+        </td>
+        <td>${fmtFull(value)}</td>
+        <td class="pnl ${pnl>=0?'pos':'neg'}">${cost>0 ? (pnl>=0?'+':'') + fmtFull(pnl) + ' (' + pnlPct.toFixed(1) + '%)' : '—'}</td>
+        <td><button class="row-del" data-id="${h.id}" title="刪除">×</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      tr.querySelectorAll('input').forEach(inp=>{
+        inp.addEventListener('change', (e)=>{
+          const field = e.target.dataset.field;
+          let v = e.target.value;
+          if(field==='shares' || field==='cost' || field==='price'){
+            v = v==='' ? (field==='price'?null:0) : parseFloat(v);
+          }
+          h[field] = v;
+          if(field==='price'){ h.source = '手動輸入'; }
+          if(field==='code'){ h.name=''; h.price=null; h.source=null; }
+          saveHoldings();
+          renderHoldings();
+          computeAll();
+        });
+      });
+      tr.querySelector('.row-del').addEventListener('click', ()=>{
+        holdings = holdings.filter(x=>x.id!==h.id);
+        saveHoldings();
+        renderHoldings();
+        computeAll();
+      });
+    });
+
+    $('holdingsTotalValue').textContent = fmtFull(totalValue);
+    const totalPnl = totalValue-totalCost;
+    $('holdingsTotalPnl').textContent = totalCost>0
+      ? (totalPnl>=0?'+':'') + fmtFull(totalPnl) + ' (' + (totalPnl/totalCost*100).toFixed(1) + '%)'
+      : '—';
+
+    return totalValue;
+  }
+
+  function currentStockValue(){
+    return holdings.reduce((s,h)=> s + ((h.price!==null && h.price!==undefined) ? h.shares*h.price : 0), 0);
+  }
+
+  /* ================= 股價抓取 ================= */
+  async function fetchAllPrices(){
+    const statusEl = $('fetchStatus');
+    statusEl.className = 'fetch-status';
+    statusEl.textContent = '抓取中…';
+
+    let twseMap = {}, tpexMap = {};
+    let twseOk = false, tpexOk = false;
+
+    try{
+      const res = await fetch('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL');
+      if(res.ok){
+        const data = await res.json();
+        data.forEach(row=>{
+          if(row.Code){
+            twseMap[row.Code] = { name: row.Name, price: parseFloat(row.ClosingPrice) };
+          }
+        });
+        twseOk = true;
+      }
+    }catch(e){ /* CORS 或網路問題，忽略，稍後標示 */ }
+
+    try{
+      const res2 = await fetch('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes');
+      if(res2.ok){
+        const data2 = await res2.json();
+        data2.forEach(row=>{
+          const code = row.SecuritiesCompanyCode || row.CompanyCode || row.Code || row['證券代號'];
+          const name = row.CompanyName || row.Name || row['證券名稱'];
+          const closeRaw = row.Close || row.ClosingPrice || row['收盤價'];
+          const close = parseFloat(closeRaw);
+          if(code && !isNaN(close)){
+            tpexMap[code] = { name: name||'', price: close };
+          }
+        });
+        tpexOk = true;
+      }
+    }catch(e){ /* 忽略 */ }
+
+    let matched = 0, unmatched = 0;
+    holdings.forEach(h=>{
+      if(!h.code) return;
+      const code = h.code.trim();
+      if(twseMap[code]){
+        h.price = twseMap[code].price;
+        h.name = twseMap[code].name;
+        h.source = '上市(TWSE) · ' + new Date().toLocaleDateString('zh-TW');
+        matched++;
+      } else if(tpexMap[code]){
+        h.price = tpexMap[code].price;
+        h.name = tpexMap[code].name;
+        h.source = '上櫃(TPEx) · ' + new Date().toLocaleDateString('zh-TW');
+        matched++;
+      } else {
+        h.source = '找不到，請手動輸入';
+        unmatched++;
+      }
+    });
+
+    await saveHoldings();
+    renderHoldings();
+    computeAll();
+
+    if(!twseOk && !tpexOk){
+      statusEl.className = 'fetch-status err';
+      statusEl.textContent = '無法自動連線（可能為網路或跨網域限制），請手動輸入股價';
+    } else {
+      statusEl.className = 'fetch-status ok';
+      statusEl.textContent = `已更新 ${matched} 檔${unmatched? '，' + unmatched + ' 檔查無資料' : ''} · ${new Date().toLocaleTimeString('zh-TW')}`;
+    }
+  }
+
+  /* ================= 主計算 ================= */
+  function monthsBetween(d1,d2){
+    return (d2.getFullYear()-d1.getFullYear())*12 + (d2.getMonth()-d1.getMonth());
+  }
+
+  function computeAll(){
+    const cfg = readInputs();
+    const curStock = currentStockValue();
+    const birth = new Date(cfg.birthDate);
+    const now = new Date();
+    const targetDate = new Date(birth);
+    targetDate.setFullYear(birth.getFullYear() + cfg.retireAge);
+
+    const curAgeExact = (now - birth) / (365.2425*24*3600*1000);
+    $('curAgeLabel').textContent = curAgeExact.toFixed(1);
+    $('targetDateLabel').textContent = targetDate.toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
+
+    // ---- 倒數：今天 -> 退休日 ----
+    let diffMs = targetDate - now;
+    if(diffMs < 0) diffMs = 0;
+    const oneDay = 24*3600*1000;
+    const years = Math.floor(diffMs/(365.2425*oneDay));
+    const afterYears = diffMs - years*365.2425*oneDay;
+    const months = Math.floor(afterYears/(30.4368*oneDay));
+    const afterMonths = afterYears - months*30.4368*oneDay;
+    const days = Math.floor(afterMonths/oneDay);
+    const hours = Math.floor((afterMonths - days*oneDay)/3600000);
+    $('cdYears').textContent = years;
+    $('cdMonths').textContent = months;
+    $('cdDays').textContent = days;
+    $('cdHours').textContent = hours;
+
+    // ---- 儀表盤：以「監控起始日」到「退休日」為100%基準 ----
+    const start = planStartDate ? new Date(planStartDate) : now;
+    const totalSpanMs = Math.max(1, targetDate - start);
+    const elapsedMs = Math.max(0, now - start);
+    const pctElapsed = Math.max(0, Math.min(100, elapsedMs/totalSpanMs*100));
+
+    const R = 96, C = 2*Math.PI*R;
+    const dial = $('dialProgress');
+    dial.setAttribute('stroke-dasharray', C.toFixed(1));
+    dial.setAttribute('stroke-dashoffset', (C*(1-pctElapsed/100)).toFixed(1));
+    $('dialPct').textContent = pctElapsed.toFixed(1)+'%';
+    $('dialSince').textContent = '起算：' + (planStartDate||todayStr());
+
+    // ---- 未來計畫路徑（月複利） ----
+    const totalMonths = monthsBetween(birth, targetDate);
+    const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
+    const totalYears = Math.max(1, Math.ceil(totalMonths/12));
+
+    let balance = curStock;
+    const yearlyPlan = [{yearIdx:0, age: Math.floor(curAgeExact), balance: curStock + cfg.curCash}];
+    for(let y=1; y<=totalYears; y++){
+      for(let i=0;i<12;i++){
+        balance += cfg.monthlyDca;
+        balance *= (1+monthlyRate);
+      }
+      yearlyPlan.push({yearIdx:y, age: Math.floor(curAgeExact)+y, balance: balance + cfg.curCash});
+    }
+
+    const finalAsset = yearlyPlan[yearlyPlan.length-1].balance;
+    const contributed = cfg.monthlyDca * totalMonths;
+    const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
+    const swr = finalAsset>0 ? (expenseAtRetirement/finalAsset*100) : 0;
+
+    $('metricFinalAsset').textContent = fmtMoney(finalAsset);
+    $('metricFinalAsset').title = fmtFull(finalAsset);
+    $('metricContributed').textContent = fmtMoney(contributed);
+
+    const swrMetricEl = $('metricSwr').closest('.metric');
+    $('metricSwr').textContent = swr.toFixed(2)+'%';
+    swrMetricEl.classList.remove('good','warn');
+    if(swr <= 4.5){ swrMetricEl.classList.add('good'); $('metricSwrSub').textContent='落於安全提領率基準內'; }
+    else if(swr <= 7){ $('metricSwrSub').textContent='略高於安全基準，建議留意'; }
+    else { swrMetricEl.classList.add('warn'); $('metricSwrSub').textContent='顯著高於安全基準 ~4%'; }
+
+    const curActual = curStock + cfg.curCash;
+    const planAtNow = yearlyPlan[0].balance;
+    const progressPct = planAtNow>0 ? (curActual/planAtNow*100) : 100;
+    $('metricProgress').textContent = progressPct.toFixed(0)+'%';
+    $('metricProgressSub').textContent = '今日實際 ' + fmtMoney(curActual) + ' / 計畫 ' + fmtMoney(planAtNow);
+
+    renderChart(yearlyPlan);
+    renderLedger(yearlyPlan);
+  }
+
+  function renderChart(yearlyPlan){
+    const labels = yearlyPlan.map(p => '第'+p.yearIdx+'年 (age '+p.age+')');
+    const planData = yearlyPlan.map(p => Math.round(p.balance));
+    const actualData = yearlyPlan.map(p => {
+      const v = ledgerActuals[p.yearIdx];
+      return (v!==undefined && v!==null && v!=='') ? Math.round(v) : null;
+    });
+
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    if(chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          { label:'計畫路徑', data: planData, borderColor:'#c9a227', backgroundColor:'rgba(201,162,39,0.08)',
+            borderWidth:2, pointRadius:0, tension:0.25, fill:true },
+          { label:'實際資產', data: actualData, borderColor:'#4f9c78', backgroundColor:'rgba(79,156,120,0.12)',
+            borderWidth:2, pointRadius:3, pointBackgroundColor:'#4f9c78', tension:0.25, fill:false, spanGaps:true }
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{ legend:{display:false},
+          tooltip:{ callbacks:{ label:(c)=> c.dataset.label+': '+ (c.raw!==null? c.raw.toLocaleString():'—') } }
+        },
+        scales:{
+          x:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, maxRotation:60, minRotation:0, autoSkip:true, maxTicksLimit:8 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+          y:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, callback:(v)=> fmtMoney(v) }, grid:{ color:'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  }
+
+  function renderLedger(yearlyPlan){
+    const tbody = $('ledgerBody');
+    tbody.innerHTML = '';
+    const now = new Date();
+    const curYear = now.getFullYear();
+
+    yearlyPlan.forEach(p => {
+      const tr = document.createElement('tr');
+      const calYear = curYear + p.yearIdx;
+      const actualVal = ledgerActuals[p.yearIdx];
+      const achieveRate = (actualVal!==undefined && actualVal!=='' && actualVal!==null)
+        ? (actualVal/p.balance*100) : null;
+
+      let tagHtml = '<span class="tag future">尚未填報</span>';
+      if(achieveRate!==null){
+        tagHtml = achieveRate>=95
+          ? '<span class="tag ontrack">達標 ●</span>'
+          : '<span class="tag behind">落後 ▲</span>';
+      }
+
+      tr.innerHTML = `
+        <td>第 ${p.yearIdx} 年（${calYear}）</td>
+        <td>${p.age}</td>
+        <td>${fmtFull(p.balance)}</td>
+        <td><input class="actual-input" type="number" placeholder="填入實際"
+              data-year="${p.yearIdx}" value="${actualVal!==undefined?actualVal:''}"></td>
+        <td>${achieveRate!==null ? achieveRate.toFixed(0)+'%' : '—'}</td>
+        <td>${tagHtml}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.actual-input').forEach(inp=>{
+      inp.addEventListener('change', async (e)=>{
+        const y = e.target.dataset.year;
+        const v = e.target.value;
+        if(v===''){ delete ledgerActuals[y]; } else { ledgerActuals[y] = parseFloat(v); }
+        await saveLedger();
+        computeAll();
+      });
+    });
+  }
+
+  /* ================= 綁定事件 ================= */
+  ['birthDate','retireAge','curCash','monthlyDca','annualReturn','firstYearExpense','inflation'].forEach(id=>{
+    $(id).addEventListener('input', ()=>{ scheduleSaveConfig(); computeAll(); });
+  });
+
+  $('btnAddRow').addEventListener('click', ()=> addHolding());
+  $('btnFetch').addEventListener('click', fetchAllPrices);
+
+  (async function init(){
+    await loadStorage();
+    if(holdings.length===0){
+      // 首次使用預帶一列範例, 方便使用者理解格式(不預設任何真實股數/成本)
+      addHolding({code:'', shares:0, cost:0});
+    } else {
+      renderHoldings();
+    }
+    computeAll();
+    fetchAllPrices(); // 開啟頁面時自動嘗試抓取一次
+
+    setInterval(()=>{
+      const cfg = readInputs();
+      const birth = new Date(cfg.birthDate);
+      const targetDate = new Date(birth);
+      targetDate.setFullYear(birth.getFullYear() + cfg.retireAge);
+      let diffMs = targetDate - new Date();
+      if(diffMs < 0) diffMs = 0;
+      const oneDay = 24*3600*1000;
+      const years = Math.floor(diffMs/(365.2425*oneDay));
+      const afterYears = diffMs - years*365.2425*oneDay;
+      const months = Math.floor(afterYears/(30.4368*oneDay));
+      const afterMonths = afterYears - months*30.4368*oneDay;
+      const days = Math.floor(afterMonths/oneDay);
+      const hours = Math.floor((afterMonths - days*oneDay)/3600000);
+      $('cdYears').textContent = years;
+      $('cdMonths').textContent = months;
+      $('cdDays').textContent = days;
+      $('cdHours').textContent = hours;
+
+      // 儀表盤也隨時間微幅更新(不用整頁重繪)
+      const start = planStartDate ? new Date(planStartDate) : new Date();
+      const totalSpanMs = Math.max(1, targetDate - start);
+      const elapsedMs = Math.max(0, new Date() - start);
+      const pctElapsed = Math.max(0, Math.min(100, elapsedMs/totalSpanMs*100));
+      const R = 96, C = 2*Math.PI*R;
+      $('dialProgress').setAttribute('stroke-dashoffset', (C*(1-pctElapsed/100)).toFixed(1));
+      $('dialPct').textContent = pctElapsed.toFixed(1)+'%';
+    }, 1000);
+  })();
+})();
+</script>
+</body>
+</html>

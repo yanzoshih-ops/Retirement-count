@@ -7,6 +7,74 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmBUdUW5l_7EHLHmFHeb0YQjN-P-MVne4",
+    authDomain: "retirement-tracker-51341.firebaseapp.com",
+    projectId: "retirement-tracker-51341",
+    storageBucket: "retirement-tracker-51341.firebasestorage.app",
+    messagingSenderId: "1082946588576",
+    appId: "1:1082946588576:web:1b8b9d56b7eef4fbcadec5",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  let currentUser = null;
+  let authReadyResolved = false;
+  let resolveAuthReady;
+  window.__authReady = new Promise(res => { resolveAuthReady = res; });
+
+  function userDocRef(uid){ return doc(db, 'users', uid); }
+
+  window.__getCurrentUser = () => currentUser;
+
+  window.__signInWithGoogle = async () => {
+    try{ await signInWithPopup(auth, provider); }
+    catch(e){ alert('登入失敗：' + (e.message || e)); }
+  };
+  window.__signOutUser = async () => {
+    try{ await signOut(auth); }catch(e){}
+  };
+
+  window.__cloudGet = async (key) => {
+    if(!currentUser) return null;
+    try{
+      const snap = await getDoc(userDocRef(currentUser.uid));
+      if(snap.exists()){
+        const data = snap.data();
+        return (data && data[key] !== undefined) ? data[key] : null;
+      }
+      return null;
+    }catch(e){ console.warn('cloud get failed', e); return null; }
+  };
+
+  window.__cloudSet = async (key, value) => {
+    if(!currentUser) return false;
+    try{
+      await setDoc(userDocRef(currentUser.uid), { [key]: value, _updatedAt: Date.now() }, { merge:true });
+      return true;
+    }catch(e){ console.warn('cloud set failed', e); return false; }
+  };
+
+  onAuthStateChanged(auth, (user)=>{
+    const prevUser = currentUser;
+    currentUser = user;
+    window.dispatchEvent(new CustomEvent('authchange', { detail: { user, justSignedIn: !prevUser && !!user } }));
+    if(!authReadyResolved){ authReadyResolved = true; resolveAuthReady(); }
+  });
+</script>
 <style>
   :root{
     --ink: #0e1319;
@@ -38,6 +106,20 @@
     min-height:100vh;
   }
   .wrap{max-width:1040px;margin:0 auto;padding:48px 24px 100px;}
+
+  /* ---------- auth bar ---------- */
+  .auth-bar{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    padding-bottom:18px;margin-bottom:8px;border-bottom:1px solid var(--line);
+  }
+  .auth-status{
+    display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--text-dim);
+  }
+  .auth-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .auth-dot.offline{background:var(--text-faint);}
+  .auth-dot.online{background:var(--teal);box-shadow:0 0 6px rgba(79,156,120,0.6);}
+  .auth-user{display:flex;align-items:center;gap:8px;}
+  .auth-user img{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);}
 
   /* ---------- header ---------- */
   .eyebrow{
@@ -268,6 +350,17 @@
 <body>
 <div class="wrap">
 
+  <div class="auth-bar">
+    <div class="auth-status" id="authStatus">
+      <span class="auth-dot offline" id="authDot"></span>
+      <span id="authStatusText">未登入 · 資料僅存本機瀏覽器</span>
+    </div>
+    <div>
+      <button class="btn" id="btnSignIn">使用 Google 帳號登入</button>
+      <button class="btn ghost" id="btnSignOut" style="display:none;">登出</button>
+    </div>
+  </div>
+
   <div class="eyebrow">私人財富規劃 · 退休倒數存摺</div>
   <h1>距離 50 歲退休</h1>
   <div class="sub">依你的實際持股、每月定期定額投入與資產成長假設，即時追蹤退休倒數與資產累積進度。</div>
@@ -464,7 +557,7 @@
 
 </div>
 
-<script>
+<script type="module">
 (function(){
   const $ = id => document.getElementById(id);
   const CONFIG_KEY = 'retirement-config-v2';
@@ -472,10 +565,17 @@
   const HOLDINGS_KEY = 'retirement-holdings-v1';
   const PLAN_START_KEY = 'retirement-plan-start-v1';
 
-  // 本機儲存(localStorage)包裝, 介面模擬原本的 storage.get/set,
-  // 資料僅存在「這台裝置、這個瀏覽器」的 localStorage 中, 換裝置或清除瀏覽器資料會遺失。
+  // 儲存層: 已登入 Google 帳號時, 讀取優先走 Firestore(雲端), 寫入同時寫本機+雲端;
+  // 未登入時, 完全比照原本行為, 只用瀏覽器的 localStorage。
   const storage = {
     async get(key){
+      try{
+        if(window.__getCurrentUser && window.__getCurrentUser()){
+          const cloudVal = await window.__cloudGet(key);
+          if(cloudVal!==null && cloudVal!==undefined) return { key, value: cloudVal };
+          return null; // 已登入但雲端尚無此欄位資料
+        }
+      }catch(e){ /* 雲端讀取失敗, 往下改走本機 */ }
       try{
         const raw = localStorage.getItem(key);
         if(raw===null) return null;
@@ -483,12 +583,47 @@
       }catch(e){ return null; }
     },
     async set(key, value){
+      try{ localStorage.setItem(key, value); }catch(e){ /* 本機寫入失敗就算了, 仍嘗試雲端 */ }
       try{
-        localStorage.setItem(key, value);
-        return { key, value };
-      }catch(e){ return null; }
+        if(window.__getCurrentUser && window.__getCurrentUser()){
+          await window.__cloudSet(key, value);
+        }
+      }catch(e){ /* 雲端寫入失敗, 本機仍有備份 */ }
+      return { key, value };
     }
   };
+
+  const CLOUD_KEYS = [CONFIG_KEY, LEDGER_KEY, HOLDINGS_KEY, PLAN_START_KEY];
+
+  async function migrateLocalToCloudIfEmpty(){
+    for(const key of CLOUD_KEYS){
+      try{
+        const cloudVal = await window.__cloudGet(key);
+        if(cloudVal===null || cloudVal===undefined){
+          const localVal = localStorage.getItem(key);
+          if(localVal!==null){ await window.__cloudSet(key, localVal); }
+        }
+      }catch(e){ /* 忽略單一欄位遷移失敗, 不影響其他欄位 */ }
+    }
+  }
+
+  function updateAuthUI(user){
+    const dot = $('authDot');
+    const text = $('authStatusText');
+    const btnIn = $('btnSignIn');
+    const btnOut = $('btnSignOut');
+    if(user){
+      dot.className = 'auth-dot online';
+      text.innerHTML = `<span class="auth-user">${user.photoURL ? `<img src="${user.photoURL}" referrerpolicy="no-referrer">` : ''}${user.email || user.displayName || '已登入'}</span> · 已同步雲端`;
+      btnIn.style.display = 'none';
+      btnOut.style.display = 'inline-flex';
+    } else {
+      dot.className = 'auth-dot offline';
+      text.textContent = '未登入 · 資料僅存本機瀏覽器';
+      btnIn.style.display = 'inline-flex';
+      btnOut.style.display = 'none';
+    }
+  }
 
   let ledgerActuals = {};
   let holdings = []; // {id, code, shares, cost, name, price, source}
@@ -1047,8 +1182,32 @@
 
   $('btnAddRow').addEventListener('click', ()=> addHolding());
   $('btnFetch').addEventListener('click', fetchAllPrices);
+  $('btnSignIn').addEventListener('click', ()=> window.__signInWithGoogle && window.__signInWithGoogle());
+  $('btnSignOut').addEventListener('click', ()=> window.__signOutUser && window.__signOutUser());
+
+  async function reloadAllDataAndRender(){
+    await loadStorage();
+    if(holdings.length===0){
+      addHolding({code:'', shares:0, cost:0});
+    } else {
+      renderHoldings();
+    }
+    computeAll();
+  }
+
+  window.addEventListener('authchange', async (e)=>{
+    const user = e.detail.user;
+    updateAuthUI(user);
+    if(user && e.detail.justSignedIn){
+      $('authStatusText').textContent = '登入成功，正在同步資料…';
+      await migrateLocalToCloudIfEmpty();
+    }
+    await reloadAllDataAndRender();
+  });
 
   (async function init(){
+    if(window.__authReady){ await window.__authReady; } // 等待 Firebase 回報初始登入狀態, 避免先讀本機再被雲端資料覆蓋
+    updateAuthUI(window.__getCurrentUser ? window.__getCurrentUser() : null);
     await loadStorage();
     if(holdings.length===0){
       // 首次使用預帶一列範例, 方便使用者理解格式(不預設任何真實股數/成本)

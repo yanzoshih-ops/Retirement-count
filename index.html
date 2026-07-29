@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>50 歲退休倒數 · 存摺</title>
+<title>退休倒數 · 資產儀表板</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <script type="module">
@@ -77,373 +78,440 @@
 </script>
 <style>
   :root{
-    --ink: #0e1319;
-    --panel: #171f27;
-    --panel-2: #1d2733;
-    --line: #2a3543;
-    --paper: #ece4d3;
-    --paper-dim: #d9cfb8;
-    --gold: #c9a227;
-    --gold-bright: #e8c765;
-    --teal: #4f9c78;
-    --red: #c1584c;
-    --text: #eae3d4;
-    --text-dim: #8993a1;
-    --text-faint: #55606c;
-    --serif: 'Noto Serif TC', serif;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Noto Sans TC', sans-serif;
+    --bg: #f5f7fb;
+    --bg-2: #eef2f9;
+    --surface: #ffffff;
+    --surface-2: #f4f7fc;
+    --surface-3: #eaf0f9;
+    --line: #e3e9f2;
+    --line-strong: #cfd8e6;
+
+    --brand: #2563eb;
+    --brand-2: #06b6d4;
+    --brand-3: #7c3aed;
+    --brand-soft: rgba(37,99,235,0.08);
+
+    --pos: #0d9488;
+    --neg: #e11d48;
+    --warn: #d97706;
+
+    --text: #0d1729;
+    --text-dim: #5a6a82;
+    --text-faint: #93a2b8;
+
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --display: 'Space Grotesk', 'Noto Sans TC', sans-serif;
+    --sans: 'Noto Sans TC', system-ui, sans-serif;
+
+    --shadow-sm: 0 1px 2px rgba(13,23,41,0.04), 0 2px 8px rgba(13,23,41,0.04);
+    --shadow-md: 0 2px 4px rgba(13,23,41,0.04), 0 12px 28px -12px rgba(13,23,41,0.16);
+    --radius: 14px;
   }
   *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   body{
     margin:0;
-    background:
-      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(201,162,39,0.07), transparent 60%),
-      var(--ink);
     color:var(--text);
     font-family:var(--sans);
     line-height:1.6;
     min-height:100vh;
+    background:
+      radial-gradient(900px 480px at 12% -8%, rgba(37,99,235,0.10), transparent 62%),
+      radial-gradient(760px 420px at 92% 4%, rgba(6,182,212,0.10), transparent 60%),
+      linear-gradient(180deg, var(--bg-2), var(--bg) 320px);
+    background-attachment:fixed;
   }
-  .wrap{max-width:1040px;margin:0 auto;padding:48px 24px 100px;}
-  @media (max-width:700px){ .wrap{padding:28px 16px 80px;} }
-  @media (max-width:380px){ .wrap{padding:20px 12px 64px;} }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(to right, rgba(13,23,41,0.028) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(13,23,41,0.028) 1px, transparent 1px);
+    background-size:52px 52px;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 78%);
+    -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 78%);
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:34px 24px 96px;position:relative;z-index:1;}
+  @media (max-width:760px){ .wrap{padding:22px 15px 72px;} }
+  @media (max-width:380px){ .wrap{padding:18px 12px 60px;} }
 
-  /* ---------- auth bar ---------- */
-  .auth-bar{
-    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
-    padding-bottom:18px;margin-bottom:8px;border-bottom:1px solid var(--line);
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:rgba(255,255,255,0.72);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:11px 16px;
+    box-shadow:var(--shadow-sm);
   }
-  @media (max-width:560px){
-    .auth-bar{flex-direction:column;align-items:stretch;}
-    .auth-bar > div{display:flex;gap:8px;}
-    .auth-bar > div .btn{flex:1;justify-content:center;}
+  .brand-mark{display:flex;align-items:center;gap:10px;}
+  .brand-logo{
+    width:30px;height:30px;border-radius:9px;flex:none;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:var(--display);font-weight:700;font-size:14px;
+    box-shadow:0 4px 12px -3px rgba(37,99,235,0.55);
   }
-  .auth-status{
-    display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--text-dim);
-  }
-  .auth-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .brand-name{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:-0.01em;line-height:1.25;}
+  .brand-name span{display:block;font-family:var(--mono);font-size:9.5px;color:var(--text-faint);letter-spacing:0.12em;text-transform:uppercase;font-weight:500;}
+  .auth-status{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+  .auth-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none;}
   .auth-dot.offline{background:var(--text-faint);}
-  .auth-dot.online{background:var(--teal);box-shadow:0 0 6px rgba(79,156,120,0.6);}
-  .auth-user{display:flex;align-items:center;gap:8px;}
-  .auth-user img{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);}
+  .auth-dot.online{background:var(--pos);box-shadow:0 0 0 3px rgba(13,148,136,0.15);}
+  .auth-user{display:inline-flex;align-items:center;gap:7px;vertical-align:middle;}
+  .auth-user img{width:20px;height:20px;border-radius:50%;border:1px solid var(--line);}
+  .topbar-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  @media (max-width:620px){
+    .topbar{flex-direction:column;align-items:stretch;}
+    .topbar-right{flex-direction:column;align-items:stretch;gap:10px;}
+    .topbar-right > div{display:flex;gap:8px;}
+    .topbar-right .btn{flex:1;justify-content:center;}
+  }
 
   /* ---------- header ---------- */
+  .page-head{margin:34px 0 22px;}
   .eyebrow{
-    font-family:var(--mono);
-    font-size:12px;
-    letter-spacing:0.24em;
-    color:var(--gold);
-    text-transform:uppercase;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:14px;
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:0.18em;text-transform:uppercase;
+    color:var(--brand);background:var(--brand-soft);
+    border:1px solid rgba(37,99,235,0.18);
+    padding:5px 11px;border-radius:100px;margin-bottom:14px;
   }
-  .eyebrow::before{content:"";width:22px;height:1px;background:var(--gold);display:inline-block;}
+  .eyebrow i{width:5px;height:5px;border-radius:50%;background:var(--brand);display:inline-block;
+    animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.65);}}
   h1{
-    font-family:var(--serif);
-    font-weight:700;
-    font-size:clamp(28px,4.4vw,44px);
-    margin:0 0 6px;
-    color:var(--paper);
+    font-family:var(--display);font-weight:700;
+    font-size:clamp(26px,4.6vw,42px);line-height:1.15;letter-spacing:-0.025em;
+    margin:0 0 8px;
   }
-  .sub{color:var(--text-dim);font-size:14.5px;max-width:60ch;}
+  h1 em{
+    font-style:normal;
+    background:linear-gradient(120deg,var(--brand),var(--brand-2) 60%,var(--brand-3));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{color:var(--text-dim);font-size:14px;max-width:62ch;}
 
-  /* ---------- hero: countdown dial ---------- */
+  /* ---------- hero ---------- */
   .hero{
-    margin-top:40px;
-    display:grid;
-    grid-template-columns: 260px 1fr;
-    gap:40px;
-    align-items:center;
-    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    display:grid;grid-template-columns:230px 1fr;gap:34px;align-items:center;
+    background:var(--surface);
     border:1px solid var(--line);
-    border-radius:6px;
-    padding:36px;
-    position:relative;
-    overflow:hidden;
+    border-radius:20px;
+    padding:30px 34px;
+    box-shadow:var(--shadow-md);
+    position:relative;overflow:hidden;
   }
-  .hero::after{
-    content:"";
-    position:absolute; inset:0;
-    background:
-      repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(255,255,255,0.012) 28px);
-    pointer-events:none;
+  .hero::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(600px 240px at 88% 0%, rgba(6,182,212,0.09), transparent 70%);
   }
-  @media (max-width:700px){ .hero{grid-template-columns:1fr; text-align:center; padding:26px 20px; gap:24px;} }
-  @media (max-width:380px){ .hero{padding:20px 14px; border-radius:4px;} }
+  .hero > *{position:relative;}
+  @media (max-width:820px){ .hero{grid-template-columns:1fr;gap:24px;padding:24px 20px;text-align:center;} }
+  @media (max-width:380px){ .hero{padding:20px 14px;} }
 
-  .dial-holder{position:relative;width:220px;height:220px;margin:0 auto;}
-  @media (max-width:480px){ .dial-holder{width:170px;height:170px;} }
+  .dial-holder{position:relative;width:200px;height:200px;margin:0 auto;}
+  @media (max-width:480px){ .dial-holder{width:162px;height:162px;} }
   .dial-holder svg{width:100%;height:100%;transform:rotate(-90deg);}
-  .dial-track{fill:none;stroke:var(--line);stroke-width:8;}
-  .dial-progress{fill:none;stroke:var(--gold);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.6s ease;}
-  .dial-center{
-    position:absolute;inset:0;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;
+  .dial-track{fill:none;stroke:var(--surface-3);stroke-width:11;}
+  .dial-progress{fill:none;stroke:url(#dialGrad);stroke-width:11;stroke-linecap:round;
+    transition:stroke-dashoffset .5s cubic-bezier(.4,0,.2,1);}
+  .dial-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+  .dial-pct{font-family:var(--display);font-size:31px;font-weight:700;letter-spacing:-0.02em;}
+  @media (max-width:480px){ .dial-pct{font-size:25px;} }
+  .dial-label{font-family:var(--mono);font-size:9.5px;letter-spacing:0.14em;color:var(--text-faint);text-transform:uppercase;margin-top:2px;}
+  .dial-since{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);margin-top:9px;}
+
+  .countdown-title{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--text-faint);margin-bottom:14px;
   }
-  .dial-pct{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--paper);}
-  @media (max-width:480px){ .dial-pct{font-size:26px;} }
-  .dial-label{font-family:var(--mono);font-size:10.5px;letter-spacing:0.14em;color:var(--text-faint);text-transform:uppercase;margin-top:4px;}
-  .dial-since{font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:12px;}
+  .countdown-figs{display:flex;gap:8px;flex-wrap:wrap;}
+  @media (max-width:820px){ .countdown-figs{justify-content:center;} }
+  .cf{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+    padding:11px 12px;min-width:70px;text-align:center;flex:1 1 70px;max-width:112px;
+    transition:background .3s, border-color .3s;
+  }
+  .cf .num{
+    font-family:var(--display);font-weight:700;font-size:clamp(20px,3.2vw,29px);
+    line-height:1.1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;
+  }
+  .cf .unit{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);letter-spacing:0.1em;margin-top:3px;text-transform:uppercase;}
+  .cf.sec{border-color:rgba(37,99,235,0.28);background:var(--brand-soft);}
+  .cf.sec .num{color:var(--brand);}
+  .cf.sec.tick{border-color:var(--brand);box-shadow:0 0 0 3px rgba(37,99,235,0.12);}
+  .target-line{
+    margin-top:16px;font-family:var(--mono);font-size:11.5px;color:var(--text-faint);
+    display:flex;gap:18px;flex-wrap:wrap;
+  }
+  @media (max-width:820px){ .target-line{justify-content:center;} }
+  .target-line b{color:var(--text-dim);font-weight:600;}
 
-  .countdown-title{font-size:13.5px;color:var(--text-dim);margin-bottom:10px;font-family:var(--sans);}
-  .countdown-figs{display:flex;gap:22px;flex-wrap:wrap;}
-  @media (max-width:700px){.countdown-figs{justify-content:center;}}
-  .cf{text-align:left;}
-  @media (max-width:700px){.cf{text-align:center;}}
-  .cf .num{font-family:var(--serif);font-weight:900;font-size:clamp(30px,5vw,48px);color:var(--paper);line-height:1;}
-  .cf .unit{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:0.1em;margin-top:4px;}
-  .target-line{margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--text-faint);}
-  .target-line b{color:var(--text-dim);font-weight:500;}
-
-  /* ---------- section titles ---------- */
-  .section{margin-top:52px;}
-  @media (max-width:700px){ .section{margin-top:36px;} }
-  .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+  /* ---------- sections ---------- */
+  .section{margin-top:44px;}
+  @media (max-width:760px){ .section{margin-top:32px;} }
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
   .section-head h2{
-    font-family:var(--serif);font-size:20px;font-weight:600;color:var(--paper);margin:0;
+    font-family:var(--display);font-size:19px;font-weight:600;margin:0;letter-spacing:-0.015em;
     display:flex;align-items:center;gap:10px;
   }
-  @media (max-width:480px){ .section-head h2{font-size:17px;} }
-  .section-head h2 .idx{font-family:var(--mono);color:var(--gold);font-size:13px;}
-  .section-note{font-size:12.5px;color:var(--text-faint);font-family:var(--mono);}
-  @media (max-width:480px){ .section-note{font-size:11px;} }
+  @media (max-width:480px){ .section-head h2{font-size:16.5px;} }
+  .section-head h2 .idx{
+    font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--brand);
+    background:var(--brand-soft);border:1px solid rgba(37,99,235,0.16);
+    padding:3px 8px;border-radius:7px;letter-spacing:0.04em;
+  }
+  .section-note{font-size:11.5px;color:var(--text-faint);font-family:var(--mono);}
+  @media (max-width:480px){ .section-note{font-size:10.5px;} }
 
-  /* ---------- cards / inputs ---------- */
   .card{
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:6px;
-    padding:28px;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px;box-shadow:var(--shadow-sm);
   }
-  @media (max-width:700px){ .card{padding:20px 18px;} }
-  @media (max-width:380px){ .card{padding:16px 14px;} }
-  .grid-inputs{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:20px;
-  }
-  @media (max-width:820px){.grid-inputs{grid-template-columns:repeat(2,1fr);}}
-  @media (max-width:480px){.grid-inputs{grid-template-columns:1fr;}}
-  .field label{
-    display:block;font-size:11.5px;color:var(--text-faint);
-    font-family:var(--mono);letter-spacing:0.04em;margin-bottom:7px;
-  }
-  .field .input-row{display:flex;align-items:center;border-bottom:1px solid var(--line);padding-bottom:6px;transition:border-color .2s;}
-  .field .input-row:focus-within{border-color:var(--gold);}
-  .field input{
-    width:100%;background:transparent;border:none;outline:none;
-    color:var(--paper);font-family:var(--mono);font-size:15.5px;padding:2px 0;
-  }
-  .field .suffix{font-family:var(--mono);font-size:12px;color:var(--text-faint);white-space:nowrap;padding-left:6px;}
-  .save-hint{margin-top:20px;font-size:11.5px;color:var(--text-faint);font-family:var(--mono);display:flex;align-items:center;gap:8px;}
-  .save-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block;}
+  @media (max-width:760px){ .card{padding:18px 16px;} }
+  @media (max-width:380px){ .card{padding:15px 13px;} }
 
-  /* ---------- holdings table ---------- */
-  .holdings-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+  /* ---------- buttons ---------- */
   .btn{
-    font-family:var(--mono);font-size:12.5px;letter-spacing:0.03em;
-    background:var(--panel-2);border:1px solid var(--line);color:var(--paper);
-    padding:9px 16px;border-radius:4px;cursor:pointer;transition:.15s;
-    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:12px;font-weight:500;
+    background:var(--surface);border:1px solid var(--line-strong);color:var(--text);
+    padding:8px 14px;border-radius:9px;cursor:pointer;transition:.16s;
+    display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
   }
-  .btn:hover{border-color:var(--gold);color:var(--gold-bright);}
-  .btn.primary{background:var(--gold);color:#1b1405;border-color:var(--gold);}
-  .btn.primary:hover{background:var(--gold-bright);color:#1b1405;}
-  .btn.ghost{background:transparent;}
-  .fetch-status{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);}
-  .fetch-status.err{color:var(--red);}
-  .fetch-status.ok{color:var(--teal);}
+  .btn:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.primary{
+    background:linear-gradient(135deg,var(--brand),#3b82f6);color:#fff;border-color:transparent;
+    box-shadow:0 4px 12px -4px rgba(37,99,235,0.6);
+  }
+  .btn.primary:hover{background:linear-gradient(135deg,#1d4ed8,var(--brand));color:#fff;}
+  .btn.ghost{background:transparent;border-color:var(--line);color:var(--text-dim);}
+  .btn.sm{padding:6px 11px;font-size:11px;border-radius:8px;}
+  .btn.danger:hover{border-color:var(--neg);color:var(--neg);background:rgba(225,29,72,0.06);}
 
-  .scroll-hint{display:none;font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-bottom:8px;}
-  @media (max-width:700px){ .scroll-hint{display:block;} }
-  table.holdings{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;min-width:760px;}
-  @media (max-width:700px){ table.holdings{font-size:12px;} }
-  table.holdings thead th{
-    text-align:left;padding:8px 10px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
-    color:var(--text-faint);border-bottom:1px solid var(--line);
+  /* ---------- fields ---------- */
+  .grid-inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  @media (max-width:820px){ .grid-inputs{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:480px){ .grid-inputs{grid-template-columns:1fr;} }
+  .field label{
+    display:block;font-size:10.5px;color:var(--text-faint);
+    font-family:var(--mono);letter-spacing:0.06em;margin-bottom:6px;text-transform:uppercase;
   }
-  table.holdings tbody td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
-  table.holdings input{
-    width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:3px;
-    color:var(--paper);font-family:var(--mono);font-size:13px;padding:6px 8px;outline:none;
+  .field .input-row{
+    display:flex;align-items:center;gap:6px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 12px;transition:.16s;
   }
-  table.holdings input:focus{border-color:var(--gold);}
-  table.holdings input.code{width:78px;}
-  table.holdings input.shares, table.holdings input.cost{width:100px;}
-  table.holdings select.market-select{
-    width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:3px;
-    color:var(--paper);font-family:var(--mono);font-size:12.5px;padding:6px 4px;outline:none;
+  .field .input-row:focus-within{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,0.1);}
+  .field input, .field select{
+    width:100%;background:transparent;border:none;outline:none;
+    color:var(--text);font-family:var(--mono);font-size:14px;font-weight:500;padding:0;
   }
-  table.holdings select.market-select:focus{border-color:var(--gold);}
-  table.holdings .price-cell{color:var(--paper);}
-  table.holdings .price-cell .src{display:block;font-size:9.5px;color:var(--text-faint);margin-top:2px;}
-  table.holdings .name-cell{color:var(--text-dim);min-width:70px;}
-  table.holdings .pnl.pos{color:var(--teal);}
-  table.holdings .pnl.neg{color:var(--red);}
-  table.holdings .row-del{
-    background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;line-height:1;
-    padding:4px 8px;
-  }
-  table.holdings .row-del:hover{color:var(--red);}
-  table.holdings tfoot td{padding:12px 10px 4px;font-weight:600;color:var(--paper);border-top:1px solid var(--line);}
-  .holdings-empty{padding:24px 10px;color:var(--text-faint);font-family:var(--mono);font-size:12.5px;text-align:center;}
+  .field .suffix{font-family:var(--mono);font-size:11px;color:var(--text-faint);white-space:nowrap;}
+  .save-hint{margin-top:18px;font-size:11px;color:var(--text-faint);font-family:var(--mono);display:flex;align-items:center;gap:7px;}
+  .save-dot{width:6px;height:6px;border-radius:50%;background:var(--pos);display:inline-block;flex:none;}
 
-  /* ---------- metric cards ---------- */
-  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
-  @media (max-width:820px){.metrics{grid-template-columns:repeat(2,1fr);}}
-  @media (max-width:480px){.metrics{grid-template-columns:1fr;}}
+  /* ---------- portfolio ---------- */
+  .pf-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .pf-toolbar-left{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .fetch-status{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+  .fetch-status.err{color:var(--neg);}
+  .fetch-status.ok{color:var(--pos);}
+
+  .pf-total{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:18px;
+  }
+  @media (max-width:620px){ .pf-total{grid-template-columns:repeat(2,1fr);} }
+  .pf-total > div{background:var(--surface-2);padding:13px 15px;}
+  .pf-total .lb{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:5px;}
+  .pf-total .vl{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-0.02em;}
+  .pf-total .vl.pos{color:var(--pos);} .pf-total .vl.neg{color:var(--neg);}
+
+  .pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px;}
+  @media (max-width:520px){ .pf-grid{grid-template-columns:1fr;} }
+  .pf-card{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:13px;
+    padding:16px 17px;cursor:pointer;transition:.18s;position:relative;overflow:hidden;
+  }
+  .pf-card:hover{border-color:var(--brand);box-shadow:0 8px 22px -12px rgba(37,99,235,0.5);transform:translateY(-1px);}
+  .pf-card.active{border-color:var(--brand);background:#fff;box-shadow:0 8px 24px -14px rgba(37,99,235,0.6);}
+  .pf-card.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--brand),var(--brand-2));}
+  .pf-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;}
+  .pf-name{font-family:var(--display);font-weight:600;font-size:14.5px;letter-spacing:-0.01em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pf-count{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);background:var(--surface-3);
+    padding:2px 7px;border-radius:20px;flex:none;}
+  .pf-value{font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:-0.025em;line-height:1.2;}
+  .pf-value small{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text-faint);margin-left:4px;}
+  .pf-pnl{font-family:var(--mono);font-size:11.5px;margin-top:5px;font-weight:500;}
+  .pf-pnl.pos{color:var(--pos);} .pf-pnl.neg{color:var(--neg);}
+  .pf-bar{height:4px;background:var(--surface-3);border-radius:3px;overflow:hidden;margin-top:12px;}
+  .pf-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand-2));border-radius:3px;transition:width .4s;}
+  .pf-share{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);margin-top:6px;display:flex;justify-content:space-between;gap:8px;}
+  .pf-expand-hint{font-family:var(--mono);font-size:9.5px;color:var(--brand);margin-top:10px;}
+
+  .pf-detail{
+    margin-top:16px;border:1px solid var(--brand);border-radius:13px;overflow:hidden;
+    background:var(--surface);box-shadow:0 10px 30px -18px rgba(37,99,235,0.55);
+    animation:slideDown .22s ease;
+  }
+  @keyframes slideDown{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  .pf-detail-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:13px 16px;background:linear-gradient(135deg,rgba(37,99,235,0.07),rgba(6,182,212,0.05));
+    border-bottom:1px solid var(--line);
+  }
+  .pf-detail-head input.pf-rename{
+    font-family:var(--display);font-weight:600;font-size:15px;color:var(--text);
+    background:transparent;border:none;border-bottom:1px dashed var(--line-strong);outline:none;
+    padding:2px 2px;min-width:120px;max-width:100%;
+  }
+  .pf-detail-head input.pf-rename:focus{border-color:var(--brand);}
+  .pf-detail-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .pf-detail-body{padding:14px 16px 18px;}
+
+  .scroll-hint{display:none;font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-bottom:8px;}
+  @media (max-width:820px){ .scroll-hint{display:block;} }
+  .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
+  table.data{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px;min-width:790px;}
+  table.data.events{min-width:760px;}
+  table.data thead th{
+    text-align:left;padding:8px 9px;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--text-faint);border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap;
+  }
+  table.data tbody td{padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.data tbody tr:last-child td{border-bottom:none;}
+  table.data tbody tr:hover{background:var(--surface-2);}
+  table.data input, table.data select{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;
+    color:var(--text);font-family:var(--mono);font-size:12.5px;padding:6px 8px;outline:none;transition:.15s;
+  }
+  table.data input:focus, table.data select:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,0.09);}
+  table.data .name-cell{color:var(--text-dim);min-width:76px;}
+  table.data .src{display:block;font-size:9px;color:var(--text-faint);margin-top:3px;}
+  table.data .pnl.pos{color:var(--pos);} table.data .pnl.neg{color:var(--neg);}
+  table.data .muted{color:var(--text-faint);}
+  table.data .row-del{
+    background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:15px;line-height:1;
+    padding:4px 7px;border-radius:6px;transition:.15s;
+  }
+  table.data .row-del:hover{color:var(--neg);background:rgba(225,29,72,0.08);}
+  table.data tfoot td{padding:11px 9px 3px;font-weight:600;border-top:1px solid var(--line-strong);}
+  .empty-note{padding:22px 14px;color:var(--text-faint);font-family:var(--mono);font-size:11.5px;text-align:center;
+    background:var(--surface-2);border:1px dashed var(--line-strong);border-radius:11px;line-height:1.7;}
+
+  /* ---------- life events ---------- */
+  .event-toggle{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);cursor:pointer;user-select:none;}
+  .event-toggle input{width:15px;height:15px;accent-color:var(--brand);cursor:pointer;}
+  .event-impact{
+    margin-top:18px;padding:16px;border-radius:12px;
+    background:linear-gradient(135deg,var(--surface-2),rgba(6,182,212,0.05));
+    border:1px solid var(--line);
+    display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  }
+  @media (max-width:620px){ .event-impact{grid-template-columns:1fr;gap:12px;} }
+  .event-impact .imp-item{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:0.05em;text-transform:uppercase;}
+  .event-impact .imp-item b{display:block;font-family:var(--display);font-size:20px;margin-top:5px;font-weight:700;letter-spacing:-0.02em;text-transform:none;}
+  .event-impact .imp-item b.neg{color:var(--neg);} .event-impact .imp-item b.pos{color:var(--pos);}
+  .ev-hint{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-top:12px;line-height:1.7;}
+
+  /* ---------- metrics ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  @media (max-width:900px){ .metrics{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:440px){ .metrics{grid-template-columns:1fr;} }
   .metric{
-    background:var(--panel);border:1px solid var(--line);border-radius:6px;
-    padding:20px 22px;position:relative;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 19px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
   }
-  .metric .m-label{font-family:var(--mono);font-size:11px;color:var(--text-faint);letter-spacing:0.04em;margin-bottom:10px;}
-  .metric .m-value{font-family:var(--serif);font-weight:700;font-size:26px;color:var(--paper);}
-  .metric .m-value.small{font-size:20px;}
-  .metric .m-sub{font-size:11.5px;color:var(--text-dim);margin-top:6px;font-family:var(--mono);}
-  .metric.warn .m-value{color:var(--red);}
-  .metric.good .m-value{color:var(--teal);}
+  .metric::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--brand),var(--brand-2));opacity:.55;}
+  .metric.good::before{background:linear-gradient(90deg,var(--pos),#34d399);opacity:1;}
+  .metric.warn::before{background:linear-gradient(90deg,var(--neg),#fb7185);opacity:1;}
+  .metric .m-label{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:0.06em;margin-bottom:9px;text-transform:uppercase;}
+  .metric .m-value{font-family:var(--display);font-weight:700;font-size:25px;letter-spacing:-0.03em;}
+  .metric .m-value.small{font-size:21px;}
+  .metric .m-sub{font-size:10.5px;color:var(--text-dim);margin-top:5px;font-family:var(--mono);}
+  .metric.warn .m-value{color:var(--neg);}
+  .metric.good .m-value{color:var(--pos);}
 
-  /* ---------- chart ---------- */
-  .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:24px 20px 12px;}
-  @media (max-width:700px){ .chart-card{padding:18px 12px 10px;} }
-  .legend-row{display:flex;gap:22px;margin-bottom:8px;padding-left:6px;flex-wrap:wrap;}
-  @media (max-width:480px){ .legend-row{gap:14px;padding-left:2px;} }
-  .legend-item{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
-  .legend-swatch{width:14px;height:3px;border-radius:2px;}
+  /* ---------- charts ---------- */
+  .chart-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px 12px;box-shadow:var(--shadow-sm);}
+  @media (max-width:760px){ .chart-card{padding:16px 11px 8px;} }
+  .legend-row{display:flex;gap:18px;margin-bottom:10px;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;color:var(--text-dim);}
+  .legend-swatch{width:14px;height:3px;border-radius:2px;flex:none;}
 
-  /* ---------- ledger table ---------- */
-  .ledger-card{
-    background:var(--paper);
-    color:#2a2418;
-    border-radius:4px;
-    padding:6px 0 0;
-    box-shadow:0 12px 30px -14px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.06);
-    position:relative;
-    overflow:hidden;
-  }
-  .ledger-card::before{
-    content:"";position:absolute;left:0;top:0;bottom:0;width:34px;
-    background:repeating-linear-gradient(180deg, transparent 0 16px, rgba(0,0,0,0.05) 16px 17px);
-    border-right:1px dashed rgba(0,0,0,0.15);
-  }
-  .ledger-stamp{
-    position:absolute; top:18px; right:22px;
-    font-family:var(--mono); font-size:11px; letter-spacing:0.12em;
-    color:var(--gold); border:1.5px solid var(--gold); border-radius:50%;
-    width:64px;height:64px; display:flex; align-items:center;justify-content:center;
-    text-align:center; transform:rotate(-14deg); opacity:0.75;
-    line-height:1.2;
-  }
-  table.ledger{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;margin-top:8px;min-width:640px;}
-  @media (max-width:700px){ table.ledger{font-size:12px;} }
-  .ledger-scroll{overflow-x:auto;}
-  table.ledger thead th{
-    text-align:left;padding:10px 16px 10px 46px;font-size:10.5px;letter-spacing:0.08em;
-    text-transform:uppercase;color:#7a6f57;border-bottom:1px solid rgba(0,0,0,0.18);
-  }
-  table.ledger thead th:not(:first-child){padding-left:14px;}
-  table.ledger tbody td{padding:9px 14px;border-bottom:1px dotted rgba(0,0,0,0.16);}
-  table.ledger tbody td:first-child{padding-left:46px;font-weight:600;}
-  table.ledger tbody tr:last-child td{border-bottom:none;}
-  table.ledger .actual-input{
-    width:120px;background:transparent;border:none;border-bottom:1px solid rgba(0,0,0,0.3);
-    font-family:var(--mono);font-size:13px;color:#2a2418;padding:2px 2px;
-  }
-  table.ledger .actual-input:focus{outline:none;border-color:var(--gold);}
-  .tag{
-    display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 8px;border-radius:20px;
-    font-family:var(--mono);
-  }
-  .tag.ontrack{background:rgba(79,156,120,0.16);color:#2f6b4d;}
-  .tag.behind{background:rgba(193,88,76,0.14);color:#a3392f;}
-  .tag.future{background:rgba(0,0,0,0.06);color:#8a8064;}
+  /* ---------- monte carlo ---------- */
+  .mc-controls{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:20px;}
+  .mc-controls .field{min-width:150px;flex:1;}
+  @media (max-width:600px){ .mc-controls{flex-direction:column;align-items:stretch;} .mc-controls .btn{width:100%;justify-content:center;} }
+
+  .mc-progress-wrap{margin-bottom:18px;}
+  .mc-progress-track{height:5px;background:var(--surface-3);border-radius:4px;overflow:hidden;}
+  .mc-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--brand),var(--brand-2));transition:width .12s linear;}
+  .mc-progress-text{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-top:8px;}
+
+  .mc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  @media (max-width:900px){ .mc-summary{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:420px){ .mc-summary{grid-template-columns:1fr;} }
+  .mc-stat{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:13px 15px;}
+  .mc-stat-label{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);letter-spacing:0.05em;margin-bottom:6px;text-transform:uppercase;}
+  .mc-stat-value{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-0.025em;}
+  .mc-stat-value.good{color:var(--pos);} .mc-stat-value.warn{color:var(--neg);}
+
+  .mc-year-explorer{margin-top:24px;padding-top:20px;border-top:1px dashed var(--line-strong);}
+  .mc-slider-label{display:block;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);margin-bottom:10px;}
+  .mc-slider-label b{color:var(--brand);}
+  #mcYearSlider{width:100%;accent-color:var(--brand);margin-bottom:14px;cursor:pointer;}
+  .mc-hint{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);text-align:center;padding:20px 12px;
+    background:var(--surface-2);border:1px dashed var(--line-strong);border-radius:11px;line-height:1.8;}
 
   footer{
-    margin-top:60px;font-size:12px;color:var(--text-faint);
-    border-top:1px solid var(--line);padding-top:20px;font-family:var(--mono);
-    line-height:1.8;
+    margin-top:52px;font-size:11px;color:var(--text-faint);
+    border-top:1px solid var(--line);padding-top:18px;font-family:var(--mono);line-height:1.8;
   }
-
-  /* ---------- 人生事件規劃 ---------- */
-  .event-toggle{
-    display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--text-dim);
-    cursor:pointer;user-select:none;
-  }
-  .event-toggle input{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
-  table.holdings input.ev-name{width:120px;}
-  table.holdings input.ev-money{width:110px;}
-  table.holdings input.ev-date{width:130px;color-scheme:dark;}
-  .event-impact{
-    margin-top:20px;padding-top:18px;border-top:1px dashed var(--line);
-    display:flex;gap:32px;flex-wrap:wrap;
-  }
-  .event-impact .imp-item{font-family:var(--mono);font-size:12.5px;color:var(--text-dim);}
-  .event-impact .imp-item b{display:block;font-family:var(--serif);font-size:19px;color:var(--paper);margin-top:4px;font-weight:700;}
-  .event-impact .imp-item b.neg{color:var(--red);}
-  .event-impact .imp-item b.pos{color:var(--teal);}
-  @media (max-width:600px){ .event-impact{gap:20px;} }
-
-  /* ---------- 蒙地卡羅模擬 ---------- */
-  .mc-controls{
-    display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:22px;
-  }
-  .mc-controls .field{min-width:150px;flex:1;}
-  .mc-controls select{
-    width:100%;background:transparent;border:none;border-bottom:1px solid var(--line);outline:none;
-    color:var(--paper);font-family:var(--mono);font-size:14.5px;padding:2px 0 6px;
-  }
-  @media (max-width:560px){ .mc-controls{flex-direction:column;align-items:stretch;} .mc-controls .btn{width:100%;justify-content:center;} }
-
-  .mc-progress-wrap{margin-bottom:20px;}
-  .mc-progress-track{height:4px;background:var(--panel-2);border-radius:3px;overflow:hidden;}
-  .mc-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));transition:width .15s linear;}
-  .mc-progress-text{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);margin-top:8px;}
-
-  .mc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
-  @media (max-width:820px){ .mc-summary{grid-template-columns:repeat(2,1fr);} }
-  @media (max-width:420px){ .mc-summary{grid-template-columns:1fr;} }
-  .mc-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:14px 16px;}
-  .mc-stat-label{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);letter-spacing:0.03em;margin-bottom:6px;}
-  .mc-stat-value{font-family:var(--serif);font-weight:700;font-size:21px;color:var(--paper);}
-  .mc-stat-value.good{color:var(--teal);}
-  .mc-stat-value.warn{color:var(--red);}
-
-  .mc-year-explorer{margin-top:26px;padding-top:22px;border-top:1px dashed var(--line);}
-  .mc-slider-label{display:block;font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:10px;}
-  .mc-slider-label b{color:var(--gold-bright);}
-  #mcYearSlider{width:100%;accent-color:var(--gold);margin-bottom:14px;cursor:pointer;}
-
-  .mc-hint{font-family:var(--mono);font-size:12px;color:var(--text-faint);text-align:center;padding:18px 0;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="auth-bar">
-    <div class="auth-status" id="authStatus">
-      <span class="auth-dot offline" id="authDot"></span>
-      <span id="authStatusText">未登入 · 資料僅存本機瀏覽器</span>
+  <div class="topbar">
+    <div class="brand-mark">
+      <div class="brand-logo">R</div>
+      <div class="brand-name">退休倒數儀表板<span>Retirement Dashboard</span></div>
     </div>
-    <div>
-      <button class="btn" id="btnSignIn">使用 Google 帳號登入</button>
-      <button class="btn ghost" id="btnSignOut" style="display:none;">登出</button>
+    <div class="topbar-right">
+      <div class="auth-status" id="authStatus">
+        <span class="auth-dot offline" id="authDot"></span>
+        <span id="authStatusText">未登入 · 資料僅存本機瀏覽器</span>
+      </div>
+      <div>
+        <button class="btn" id="btnSignIn">Google 登入</button>
+        <button class="btn ghost" id="btnSignOut" style="display:none;">登出</button>
+      </div>
     </div>
   </div>
 
-  <div class="eyebrow">私人財富規劃 · 退休倒數存摺</div>
-  <h1>距離 50 歲退休</h1>
-  <div class="sub">依你的實際持股、每月定期定額投入與資產成長假設，即時追蹤退休倒數與資產累積進度。</div>
+  <div class="page-head">
+    <div class="eyebrow"><i></i>LIVE · 即時追蹤中</div>
+    <h1>距離 <em>財務自由</em> 還有多久</h1>
+    <div class="sub">依實際持股投組、每月定期定額、人生大額支出與市場波動假設，即時推估退休資產累積路徑。</div>
+  </div>
 
   <div class="hero">
     <div class="dial-holder">
-      <svg viewBox="0 0 220 220">
-        <circle class="dial-track" cx="110" cy="110" r="96"></circle>
-        <circle class="dial-progress" id="dialProgress" cx="110" cy="110" r="96"
-                stroke-dasharray="603" stroke-dashoffset="603"></circle>
+      <svg viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="dialGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#06b6d4"/>
+          </linearGradient>
+        </defs>
+        <circle class="dial-track" cx="100" cy="100" r="86"></circle>
+        <circle class="dial-progress" id="dialProgress" cx="100" cy="100" r="86"
+                stroke-dasharray="540" stroke-dashoffset="540"></circle>
       </svg>
       <div class="dial-center">
         <div class="dial-pct" id="dialPct">0%</div>
@@ -453,72 +521,59 @@
     </div>
 
     <div>
-      <div class="countdown-title">倒數計時（今天 → 退休日）</div>
+      <div class="countdown-title">Countdown to Retirement · 倒數計時</div>
       <div class="countdown-figs">
         <div class="cf"><div class="num" id="cdYears">--</div><div class="unit">年</div></div>
         <div class="cf"><div class="num" id="cdMonths">--</div><div class="unit">月</div></div>
         <div class="cf"><div class="num" id="cdDays">--</div><div class="unit">天</div></div>
         <div class="cf"><div class="num" id="cdHours">--</div><div class="unit">時</div></div>
+        <div class="cf"><div class="num" id="cdMins">--</div><div class="unit">分</div></div>
+        <div class="cf sec" id="cfSec"><div class="num" id="cdSecs">--</div><div class="unit">秒</div></div>
       </div>
-      <div class="target-line">退休日期：<b id="targetDateLabel">—</b> ・ 目前年齡：<b id="curAgeLabel">—</b> 歲</div>
+      <div class="target-line">
+        <span>退休日期 <b id="targetDateLabel">—</b></span>
+        <span>目前年齡 <b id="curAgeLabel">—</b> 歲</span>
+        <span>剩餘天數 <b id="cdTotalDays">—</b> 天</span>
+      </div>
     </div>
   </div>
 
-  <!-- ============ 資產組合 ============ -->
+  <!-- ============ 01 投資組合 ============ -->
   <div class="section">
     <div class="section-head">
-      <h2><span class="idx">01</span> 資產組合（真實持股）</h2>
-      <div class="section-note">台股：證交所／櫃買中心 OpenAPI ・ 美股：Yahoo Finance／Stooq（前一交易日收盤）</div>
+      <h2><span class="idx">01</span> 投資組合檢視</h2>
+      <div class="section-note">台股：TWSE／TPEx OpenAPI ・ 美股：Yahoo Finance／Stooq</div>
     </div>
     <div class="card">
-      <div class="holdings-toolbar">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <button class="btn primary" id="btnAddRow">＋ 新增持股</button>
-          <button class="btn" id="btnFetch">↻ 重新抓取股價</button>
+      <div class="pf-toolbar">
+        <div class="pf-toolbar-left">
+          <button class="btn primary" id="btnAddPortfolio">＋ 新增投資組合</button>
+          <button class="btn" id="btnFetch">↻ 更新股價</button>
           <div class="field" style="margin:0;">
-            <div class="input-row" style="border:none;padding:0;gap:6px;">
-              <span class="suffix" style="padding:0;color:var(--text-faint);">USD/TWD 匯率</span>
-              <input type="number" step="0.01" id="usdTwdRate" value="32.5" style="width:70px;text-align:right;">
+            <div class="input-row" style="padding:6px 10px;">
+              <span class="suffix">USD/TWD</span>
+              <input type="number" step="0.01" id="usdTwdRate" value="32.5" style="width:66px;text-align:right;">
             </div>
           </div>
         </div>
         <div class="fetch-status" id="fetchStatus">尚未抓取</div>
       </div>
 
-      <div class="scroll-hint">← 左右滑動可查看完整欄位 →</div>
-      <div style="overflow-x:auto;">
-      <table class="holdings">
-        <thead>
-          <tr>
-            <th style="width:76px;">市場</th>
-            <th style="width:90px;">代號</th>
-            <th>名稱</th>
-            <th style="width:100px;">股數</th>
-            <th style="width:100px;">每股成本</th>
-            <th style="width:130px;">最新收盤</th>
-            <th style="width:130px;">市值（原幣）</th>
-            <th style="width:130px;">市值（TWD）</th>
-            <th style="width:120px;">損益（原幣）</th>
-            <th style="width:36px;"></th>
-          </tr>
-        </thead>
-        <tbody id="holdingsBody"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="6">股票市值合計（換算 TWD）</td>
-            <td id="holdingsTotalValue">—</td>
-            <td id="holdingsTotalValueTwd">—</td>
-            <td id="holdingsTotalPnl">—</td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
+      <div class="pf-total">
+        <div><div class="lb">股票總市值 (TWD)</div><div class="vl" id="totMarketValue">—</div></div>
+        <div><div class="lb">總投入成本 (TWD)</div><div class="vl" id="totCost">—</div></div>
+        <div><div class="lb">未實現損益</div><div class="vl" id="totPnl">—</div></div>
+        <div><div class="lb">投組數／持股檔數</div><div class="vl" id="totCounts">—</div></div>
       </div>
-      <div class="holdings-empty" id="holdingsEmpty" style="display:none;">尚未新增任何持股，點選上方「＋ 新增持股」開始輸入。</div>
 
-      <div class="grid-inputs" style="margin-top:26px;">
+      <div class="pf-grid" id="pfGrid"></div>
+      <div class="empty-note" id="pfEmpty" style="display:none;">尚未建立投資組合，點選「＋ 新增投資組合」開始建立，例如「核心 ETF」、「美股成長股」。</div>
+
+      <div id="pfDetailHost"></div>
+
+      <div class="grid-inputs" style="margin-top:22px;">
         <div class="field">
-          <label>目前現金</label>
+          <label>目前現金部位</label>
           <div class="input-row"><input type="number" id="curCash" value="1000000"><span class="suffix">TWD</span></div>
         </div>
       </div>
@@ -526,7 +581,7 @@
     </div>
   </div>
 
-  <!-- ============ 計畫假設 ============ -->
+  <!-- ============ 02 計畫假設 ============ -->
   <div class="section">
     <div class="section-head">
       <h2><span class="idx">02</span> 計畫假設</h2>
@@ -547,7 +602,7 @@
           <div class="input-row"><input type="number" id="monthlyDca" value="40000"><span class="suffix">TWD/月</span></div>
         </div>
         <div class="field">
-          <label>預期年化報酬（未來推估用）</label>
+          <label>預期年化報酬</label>
           <div class="input-row"><input type="number" step="0.1" id="annualReturn" value="10"><span class="suffix">%</span></div>
         </div>
         <div class="field">
@@ -562,52 +617,54 @@
     </div>
   </div>
 
-  <!-- ============ 人生事件規劃 ============ -->
+  <!-- ============ 03 人生事件 ============ -->
   <div class="section">
     <div class="section-head">
-      <h2><span class="idx">03</span> 人生事件規劃（大額支出／貸款）</h2>
-      <div class="section-note">模擬購車、購屋等頭期款＋每月分期，觀察對整體退休規劃的影響</div>
+      <h2><span class="idx">03</span> 人生事件規劃</h2>
+      <div class="section-note">購車、購屋等頭期款＋分期還款，觀察對退休規劃的影響</div>
     </div>
     <div class="card">
-      <div class="holdings-toolbar">
-        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+      <div class="pf-toolbar">
+        <div class="pf-toolbar-left">
           <button class="btn primary" id="btnAddEvent">＋ 新增事件</button>
-          <label class="event-toggle"><input type="checkbox" id="eventsEnabled" checked> 套用於下方所有計算</label>
+          <label class="event-toggle"><input type="checkbox" id="eventsEnabled" checked> 套用於所有計算</label>
         </div>
       </div>
 
       <div class="scroll-hint">← 左右滑動可查看完整欄位 →</div>
-      <div style="overflow-x:auto;">
-      <table class="holdings" id="eventsTable">
+      <div class="tbl-scroll">
+      <table class="data events">
         <thead>
           <tr>
-            <th style="width:130px;">事件名稱</th>
-            <th style="width:120px;">一次性支出</th>
-            <th style="width:140px;">發生月份</th>
-            <th style="width:120px;">每月支出</th>
-            <th style="width:140px;">起始月份</th>
-            <th style="width:140px;">結束月份（留空＝到退休）</th>
-            <th style="width:36px;"></th>
+            <th style="width:150px;">事件名稱</th>
+            <th style="width:120px;">頭期／一次性支出</th>
+            <th style="width:112px;">每月還款</th>
+            <th style="width:100px;">起始年份</th>
+            <th style="width:92px;">起始月份</th>
+            <th style="width:100px;">還款期數</th>
+            <th style="width:140px;">試算</th>
+            <th style="width:34px;"></th>
           </tr>
         </thead>
         <tbody id="eventsBody"></tbody>
       </table>
       </div>
-      <div class="holdings-empty" id="eventsEmpty" style="display:none;">尚未新增任何事件。例如：今天要買車，可新增「購車」事件，填入頭期款與每月車貸，觀察是否影響整體退休規劃。</div>
+      <div class="empty-note" id="eventsEmpty" style="display:none;">尚未新增任何事件。例如：明年 3 月買車，頭期款 30 萬、每月車貸 1.2 萬、分 60 期，可立即看到對退休資產的影響。</div>
 
       <div class="event-impact" id="eventImpact" style="display:none;">
-        <div class="imp-item">對退休當日資產的影響<b id="impactAsset">—</b></div>
-        <div class="imp-item">對退休當日提領率的影響<b id="impactSwr">—</b></div>
-        <div class="imp-item">事件總支出（名目金額加總）<b id="impactTotal">—</b></div>
+        <div class="imp-item">退休當日資產影響<b id="impactAsset">—</b></div>
+        <div class="imp-item">退休提領率影響<b id="impactSwr">—</b></div>
+        <div class="imp-item">事件總支出<b id="impactTotal">—</b></div>
       </div>
+      <div class="ev-hint">＊ 一次性支出於「起始年月」當月扣除；每月還款自起始年月起連續扣除指定期數（期數留空＝持續到退休）。</div>
     </div>
   </div>
 
-  <!-- ============ 關鍵指標 ============ -->
+  <!-- ============ 04 關鍵指標 ============ -->
   <div class="section">
     <div class="section-head">
       <h2><span class="idx">04</span> 關鍵指標</h2>
-      <div class="section-note">依實際持股市值＋現金＋未來假設計算</div>
+      <div class="section-note">依投組市值＋現金＋計畫假設＋人生事件計算</div>
     </div>
     <div class="metrics">
       <div class="metric">
@@ -626,29 +683,29 @@
         <div class="m-sub">每月定期定額 × 月數</div>
       </div>
       <div class="metric">
-        <div class="m-label">目前累積進度</div>
+        <div class="m-label">目前總資產</div>
         <div class="m-value small" id="metricProgress">—</div>
-        <div class="m-sub" id="metricProgressSub">實際 vs 計畫值</div>
+        <div class="m-sub" id="metricProgressSub">股票市值＋現金</div>
       </div>
     </div>
   </div>
 
-  <!-- ============ 資產成長曲線 ============ -->
+  <!-- ============ 05 資產成長曲線 ============ -->
   <div class="section">
     <div class="section-head">
       <h2><span class="idx">05</span> 資產成長曲線</h2>
-      <div class="section-note">計畫路徑 vs 實際填報</div>
+      <div class="section-note">含人生事件的計畫路徑</div>
     </div>
     <div class="chart-card">
       <div class="legend-row">
-        <div class="legend-item"><span class="legend-swatch" style="background:#c9a227"></span>計畫路徑</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#4f9c78"></span>實際資產（存摺填報）</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#2563eb"></span>計畫路徑（含人生事件）</div>
+        <div class="legend-item"><span class="legend-swatch" style="background:#94a3b8"></span>未含人生事件</div>
       </div>
-      <canvas id="growthChart" height="260"></canvas>
+      <canvas id="growthChart" height="250"></canvas>
     </div>
   </div>
 
-  <!-- ============ 蒙地卡羅模擬 ============ -->
+  <!-- ============ 06 蒙地卡羅模擬 ============ -->
   <div class="section">
     <div class="section-head">
       <h2><span class="idx">06</span> 蒙地卡羅模擬</h2>
@@ -662,12 +719,14 @@
         </div>
         <div class="field">
           <label>模擬路徑數</label>
-          <select id="mcRuns">
-            <option value="200">200 次（較快）</option>
-            <option value="500" selected>500 次</option>
-            <option value="1000">1000 次</option>
-            <option value="2000">2000 次（較久）</option>
-          </select>
+          <div class="input-row">
+            <select id="mcRuns">
+              <option value="200">200 次（較快）</option>
+              <option value="500" selected>500 次</option>
+              <option value="1000">1000 次</option>
+              <option value="2000">2000 次（較久）</option>
+            </select>
+          </div>
         </div>
         <button class="btn primary" id="btnRunMc">▶ 執行模擬</button>
       </div>
@@ -679,7 +738,7 @@
 
       <div class="mc-summary" id="mcSummary" style="display:none;">
         <div class="mc-stat">
-          <div class="mc-stat-label">達成安全提領率（≤4%）機率</div>
+          <div class="mc-stat-label">達成安全提領率機率</div>
           <div class="mc-stat-value" id="mcSuccessRate">—</div>
         </div>
         <div class="mc-stat">
@@ -696,40 +755,21 @@
         </div>
       </div>
 
-      <canvas id="mcFanChart" height="240" style="display:none;"></canvas>
+      <canvas id="mcFanChart" height="230" style="display:none;"></canvas>
 
       <div class="mc-year-explorer" id="mcYearExplorer" style="display:none;">
         <label class="mc-slider-label">拖曳滑桿查看指定年度的資產分布：<b id="mcYearLabel">—</b></label>
         <input type="range" id="mcYearSlider" min="0" max="0" value="0">
-        <canvas id="mcHistChart" height="160"></canvas>
+        <canvas id="mcHistChart" height="150"></canvas>
       </div>
 
-      <div class="mc-hint" id="mcHint">點擊「執行模擬」，依目前的計畫假設與人生事件設定，模擬市場報酬波動下的資產路徑分布（p10 / p25 / 中位數 / p75 / p90）。</div>
-    </div>
-  </div>
-
-  <!-- ============ 存摺 ============ -->
-  <div class="section">
-    <div class="section-head">
-      <h2><span class="idx">07</span> 年度存摺</h2>
-      <div class="section-note">可填入實際資產以追蹤達成率</div>
-    </div>
-    <div class="ledger-card">
-      <div class="ledger-stamp">阿爾發<br>存摺</div>
-      <div class="ledger-scroll">
-      <table class="ledger">
-        <thead>
-          <tr><th>年度</th><th>年齡</th><th>計畫資產</th><th>實際資產</th><th>達成率</th><th>狀態</th></tr>
-        </thead>
-        <tbody id="ledgerBody"></tbody>
-      </table>
-      </div>
+      <div class="mc-hint" id="mcHint">點擊「執行模擬」，依目前的投組市值、計畫假設與人生事件，模擬市場報酬波動下的資產路徑分布（p10 / p25 / 中位數 / p75 / p90）。</div>
     </div>
   </div>
 
   <footer>
-    本頁面所有計算基於使用者輸入之假設參數（報酬率、通膨率等）與自動抓取之股價資料，僅供追蹤與情境模擬使用，不構成投資建議。<br>
-    股價資料來源：台股為台灣證交所（TWSE）與證券櫃檯買賣中心（TPEx）之公開 OpenAPI；美股為 Yahoo Finance 或 Stooq 公開資料；USD/TWD 匯率來自 open.er-api.com。皆僅反映最近一個交易日收盤價與即時匯率，可能因網路、跨網域限制或第三方服務異動無法自動取得，屆時請手動輸入對應欄位。
+    本頁面所有計算基於使用者輸入之假設參數（報酬率、通膨率、波動率等）與自動抓取之股價資料，僅供追蹤與情境模擬使用，不構成投資建議。<br>
+    股價資料來源：台股為台灣證交所（TWSE）與證券櫃檯買賣中心（TPEx）公開 OpenAPI；美股為 Yahoo Finance 或 Stooq 公開資料；USD/TWD 匯率來自 open.er-api.com。皆僅反映最近一個交易日收盤價與即時匯率，可能因網路、跨網域限制或第三方服務異動無法自動取得，屆時請手動輸入對應欄位。
   </footer>
 
 </div>
@@ -738,21 +778,21 @@
 (function(){
   const $ = id => document.getElementById(id);
   const CONFIG_KEY = 'retirement-config-v2';
-  const LEDGER_KEY = 'retirement-ledger-actuals-v1';
   const HOLDINGS_KEY = 'retirement-holdings-v1';
+  const PORTFOLIOS_KEY = 'retirement-portfolios-v1';
   const PLAN_START_KEY = 'retirement-plan-start-v1';
-  const EVENTS_KEY = 'retirement-life-events-v1';
+  const EVENTS_KEY = 'retirement-life-events-v2';
   const EVENTS_ENABLED_KEY = 'retirement-events-enabled-v1';
 
   // 儲存層: 已登入 Google 帳號時, 讀取優先走 Firestore(雲端), 寫入同時寫本機+雲端;
-  // 未登入時, 完全比照原本行為, 只用瀏覽器的 localStorage。
+  // 未登入時, 只用瀏覽器的 localStorage。
   const storage = {
     async get(key){
       try{
         if(window.__getCurrentUser && window.__getCurrentUser()){
           const cloudVal = await window.__cloudGet(key);
           if(cloudVal!==null && cloudVal!==undefined) return { key, value: cloudVal };
-          return null; // 已登入但雲端尚無此欄位資料
+          return null;
         }
       }catch(e){ /* 雲端讀取失敗, 往下改走本機 */ }
       try{
@@ -762,17 +802,17 @@
       }catch(e){ return null; }
     },
     async set(key, value){
-      try{ localStorage.setItem(key, value); }catch(e){ /* 本機寫入失敗就算了, 仍嘗試雲端 */ }
+      try{ localStorage.setItem(key, value); }catch(e){}
       try{
         if(window.__getCurrentUser && window.__getCurrentUser()){
           await window.__cloudSet(key, value);
         }
-      }catch(e){ /* 雲端寫入失敗, 本機仍有備份 */ }
+      }catch(e){}
       return { key, value };
     }
   };
 
-  const CLOUD_KEYS = [CONFIG_KEY, LEDGER_KEY, HOLDINGS_KEY, PLAN_START_KEY, EVENTS_KEY, EVENTS_ENABLED_KEY];
+  const CLOUD_KEYS = [CONFIG_KEY, HOLDINGS_KEY, PORTFOLIOS_KEY, PLAN_START_KEY, EVENTS_KEY, EVENTS_ENABLED_KEY];
 
   async function migrateLocalToCloudIfEmpty(){
     for(const key of CLOUD_KEYS){
@@ -782,15 +822,13 @@
           const localVal = localStorage.getItem(key);
           if(localVal!==null){ await window.__cloudSet(key, localVal); }
         }
-      }catch(e){ /* 忽略單一欄位遷移失敗, 不影響其他欄位 */ }
+      }catch(e){}
     }
   }
 
   function updateAuthUI(user){
-    const dot = $('authDot');
-    const text = $('authStatusText');
-    const btnIn = $('btnSignIn');
-    const btnOut = $('btnSignOut');
+    const dot = $('authDot'), text = $('authStatusText');
+    const btnIn = $('btnSignIn'), btnOut = $('btnSignOut');
     if(user){
       dot.className = 'auth-dot online';
       text.innerHTML = `<span class="auth-user">${user.photoURL ? `<img src="${user.photoURL}" referrerpolicy="no-referrer">` : ''}${user.email || user.displayName || '已登入'}</span> · 已同步雲端`;
@@ -804,16 +842,17 @@
     }
   }
 
-  let ledgerActuals = {};
-  let holdings = []; // {id, code, shares, cost, name, price, source}
-  let lifeEvents = []; // {id, name, oneTime, oneTimeDate, monthly, startDate, endDate}
+  /* ================= 狀態 ================= */
+  let portfolios = [];   // {id, name}
+  let holdings = [];     // {id, pid, market, code, name, shares, cost, price, source}
+  let lifeEvents = [];   // {id, name, oneTime, monthly, startYear, startMonth, periods}
   let planStartDate = null;
-  let chart = null;
-  let holdingIdSeq = 1;
-  let eventIdSeq = 1;
-  let mcYearlySamplesCache = null;
+  let expandedPid = null;
+  let growthChart = null;
   let mcFanChartInstance = null;
   let mcHistChart = null;
+  let mcYearlySamplesCache = null;
+  let holdingIdSeq = 1, portfolioIdSeq = 1, eventIdSeq = 1;
 
   function defaultBirthDate(){
     const d = new Date();
@@ -826,11 +865,13 @@
     if (n===null || n===undefined || isNaN(n)) return '—';
     const sign = n<0 ? '-' : '';
     const abs = Math.abs(n);
+    if(abs >= 100000000) return sign + (abs/100000000).toFixed(2) + ' 億';
     if(abs >= 10000000) return sign + (abs/10000000).toFixed(2) + ' 千萬';
     if(abs >= 10000) return sign + (abs/10000).toFixed(0) + ' 萬';
     return sign + Math.round(abs).toLocaleString();
   }
   function fmtFull(n){ if(n===null||n===undefined||isNaN(n)) return '—'; return Math.round(n).toLocaleString(); }
+  function esc(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   /* ================= 參數讀寫 ================= */
   function readInputs(){
@@ -865,17 +906,25 @@
     }catch(e){ $('birthDate').value = defaultBirthDate(); }
 
     try{
-      const ledgerRes = await storage.get(LEDGER_KEY);
-      if(ledgerRes && ledgerRes.value){ ledgerActuals = JSON.parse(ledgerRes.value); }
-    }catch(e){ ledgerActuals = {}; }
+      const pRes = await storage.get(PORTFOLIOS_KEY);
+      portfolios = (pRes && pRes.value) ? JSON.parse(pRes.value) : [];
+      portfolios.forEach(p=>{ if(p.id>=portfolioIdSeq) portfolioIdSeq = p.id+1; });
+    }catch(e){ portfolios = []; }
 
     try{
       const hRes = await storage.get(HOLDINGS_KEY);
-      if(hRes && hRes.value){
-        holdings = JSON.parse(hRes.value);
-        holdings.forEach(h=>{ if(h.id>=holdingIdSeq) holdingIdSeq = h.id+1; });
-      }
+      holdings = (hRes && hRes.value) ? JSON.parse(hRes.value) : [];
+      holdings.forEach(h=>{ if(h.id>=holdingIdSeq) holdingIdSeq = h.id+1; });
     }catch(e){ holdings = []; }
+
+    // 舊資料相容: 若無投組, 建立預設投組並把既有持股歸入
+    if(portfolios.length===0){
+      portfolios = [{ id: portfolioIdSeq++, name: '主要投資組合' }];
+      holdings.forEach(h=>{ h.pid = portfolios[0].id; });
+      await savePortfolios(); await saveHoldings();
+    }
+    const validPids = new Set(portfolios.map(p=>p.id));
+    holdings.forEach(h=>{ if(!validPids.has(h.pid)) h.pid = portfolios[0].id; });
 
     try{
       const psRes = await storage.get(PLAN_START_KEY);
@@ -885,16 +934,16 @@
 
     try{
       const evRes = await storage.get(EVENTS_KEY);
-      if(evRes && evRes.value){
-        lifeEvents = JSON.parse(evRes.value);
-        lifeEvents.forEach(ev=>{ if(ev.id>=eventIdSeq) eventIdSeq = ev.id+1; });
-      } else { lifeEvents = []; }
+      lifeEvents = (evRes && evRes.value) ? JSON.parse(evRes.value) : [];
+      lifeEvents.forEach(ev=>{ if(ev.id>=eventIdSeq) eventIdSeq = ev.id+1; });
     }catch(e){ lifeEvents = []; }
 
     try{
       const eeRes = await storage.get(EVENTS_ENABLED_KEY);
-      $('eventsEnabled').checked = eeRes && eeRes.value!==null ? (eeRes.value==='true') : true;
+      $('eventsEnabled').checked = (eeRes && eeRes.value!==null && eeRes.value!==undefined) ? (eeRes.value==='true') : true;
     }catch(e){ $('eventsEnabled').checked = true; }
+
+    if(expandedPid!==null && !validPids.has(expandedPid)) expandedPid = null;
   }
 
   let saveTimer = null;
@@ -903,85 +952,216 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(async ()=>{
       try{
-        const cfg = readInputs();
-        await storage.set(CONFIG_KEY, JSON.stringify(cfg));
+        await storage.set(CONFIG_KEY, JSON.stringify(readInputs()));
         $('saveStatus').textContent = '已自動儲存 · ' + new Date().toLocaleTimeString('zh-TW');
       }catch(e){ $('saveStatus').textContent = '儲存失敗，請稍後再試'; }
     }, 500);
   }
-  async function saveLedger(){ try{ await storage.set(LEDGER_KEY, JSON.stringify(ledgerActuals)); }catch(e){} }
   async function saveHoldings(){ try{ await storage.set(HOLDINGS_KEY, JSON.stringify(holdings)); }catch(e){} }
+  async function savePortfolios(){ try{ await storage.set(PORTFOLIOS_KEY, JSON.stringify(portfolios)); }catch(e){} }
   async function saveEvents(){ try{ await storage.set(EVENTS_KEY, JSON.stringify(lifeEvents)); }catch(e){} }
-  async function saveEventsEnabled(){ try{ await storage.set(EVENTS_ENABLED_KEY, $('eventsEnabled').checked ? 'true' : 'false'); }catch(e){} }
+  async function saveEventsEnabled(){ try{ await storage.set(EVENTS_ENABLED_KEY, $('eventsEnabled').checked ? 'true':'false'); }catch(e){} }
 
-  /* ================= 持股表格 ================= */
-  function addHolding(prefill){
+  /* ================= 投資組合 ================= */
+  function getFxRate(){ return parseFloat($('usdTwdRate').value) || 32.5; }
+
+  function holdingStats(h, fx){
+    const mul = (h.market==='US') ? fx : 1;
+    const hasPrice = (h.price!==null && h.price!==undefined && !isNaN(h.price));
+    const shares = parseFloat(h.shares)||0;
+    const costPer = parseFloat(h.cost)||0;
+    const value = hasPrice ? shares*h.price : 0;
+    const cost = shares*costPer;
+    return { value, cost, valueTwd: value*mul, costTwd: cost*mul, pnl: value-cost, hasPrice };
+  }
+
+  function portfolioStats(pid){
+    const fx = getFxRate();
+    let valueTwd=0, costTwd=0, count=0;
+    holdings.filter(h=>h.pid===pid).forEach(h=>{
+      const s = holdingStats(h, fx);
+      valueTwd += s.valueTwd; costTwd += s.costTwd; count++;
+    });
+    return { valueTwd, costTwd, pnlTwd: valueTwd-costTwd, count };
+  }
+
+  function currentStockValue(){
+    const fx = getFxRate();
+    return holdings.reduce((s,h)=> s + holdingStats(h, fx).valueTwd, 0);
+  }
+
+  function addPortfolio(){
+    const p = { id: portfolioIdSeq++, name: '投資組合 ' + (portfolios.length+1) };
+    portfolios.push(p);
+    expandedPid = p.id;
+    savePortfolios();
+    renderPortfolios();
+    computeAll();
+  }
+
+  function addHolding(pid, prefill){
     holdings.push(Object.assign({
-      id: holdingIdSeq++, market:'TW', code:'', name:'', shares:0, cost:0, price:null, source:null
+      id: holdingIdSeq++, pid, market:'TW', code:'', name:'', shares:0, cost:0, price:null, source:null
     }, prefill||{}));
     saveHoldings();
-    renderHoldings();
+    renderPortfolios();
   }
 
-  function getFxRate(){
-    return parseFloat($('usdTwdRate').value) || 32.5;
-  }
-
-  function renderHoldings(){
-    const tbody = $('holdingsBody');
-    tbody.innerHTML = '';
-    $('holdingsEmpty').style.display = holdings.length ? 'none' : 'block';
+  function renderPortfolios(){
+    const grid = $('pfGrid');
+    grid.innerHTML = '';
+    $('pfEmpty').style.display = portfolios.length ? 'none' : 'block';
 
     const fx = getFxRate();
-    let totalValueTwd = 0, totalCostTwd = 0;
-    let totalValueOrig = 0; // 僅在單一幣別情境下有意義, 顯示用途次要
+    let allValue=0, allCost=0;
+    holdings.forEach(h=>{ const s=holdingStats(h,fx); allValue+=s.valueTwd; allCost+=s.costTwd; });
 
-    holdings.forEach(h=>{
+    $('totMarketValue').textContent = fmtFull(allValue);
+    $('totCost').textContent = fmtFull(allCost);
+    const totPnl = allValue-allCost;
+    const totPnlEl = $('totPnl');
+    totPnlEl.textContent = allCost>0
+      ? (totPnl>=0?'+':'') + fmtFull(totPnl) + '（' + (totPnl/allCost*100).toFixed(1) + '%）'
+      : '—';
+    totPnlEl.className = 'vl ' + (allCost>0 ? (totPnl>=0?'pos':'neg') : '');
+    $('totCounts').textContent = portfolios.length + ' 組 / ' + holdings.length + ' 檔';
+
+    portfolios.forEach(p=>{
+      const st = portfolioStats(p.id);
+      const share = allValue>0 ? (st.valueTwd/allValue*100) : 0;
+      const pnlPct = st.costTwd>0 ? (st.pnlTwd/st.costTwd*100) : null;
+      const card = document.createElement('div');
+      card.className = 'pf-card' + (expandedPid===p.id ? ' active' : '');
+      card.innerHTML = `
+        <div class="pf-card-top">
+          <div class="pf-name">${esc(p.name)}</div>
+          <div class="pf-count">${st.count} 檔</div>
+        </div>
+        <div class="pf-value">${fmtMoney(st.valueTwd)}<small>TWD</small></div>
+        <div class="pf-pnl ${st.pnlTwd>=0?'pos':'neg'}">${pnlPct!==null ? (st.pnlTwd>=0?'▲ +':'▼ ') + fmtMoney(st.pnlTwd) + '（' + pnlPct.toFixed(1) + '%）' : '尚未輸入成本'}</div>
+        <div class="pf-bar"><i style="width:${Math.min(100,share).toFixed(1)}%"></i></div>
+        <div class="pf-share"><span>佔股票資產</span><span>${share.toFixed(1)}%</span></div>
+        <div class="pf-expand-hint">${expandedPid===p.id ? '▲ 收合明細' : '▼ 點擊展開投組明細'}</div>
+      `;
+      card.addEventListener('click', ()=>{
+        expandedPid = (expandedPid===p.id) ? null : p.id;
+        renderPortfolios();
+      });
+      grid.appendChild(card);
+    });
+
+    renderPortfolioDetail();
+  }
+
+  function renderPortfolioDetail(){
+    const host = $('pfDetailHost');
+    host.innerHTML = '';
+    if(expandedPid===null) return;
+    const p = portfolios.find(x=>x.id===expandedPid);
+    if(!p) return;
+
+    const fx = getFxRate();
+    const rows = holdings.filter(h=>h.pid===p.id);
+
+    const box = document.createElement('div');
+    box.className = 'pf-detail';
+    box.innerHTML = `
+      <div class="pf-detail-head">
+        <input class="pf-rename" value="${esc(p.name)}" title="點擊可修改投組名稱">
+        <div class="pf-detail-actions">
+          <button class="btn sm primary" data-act="add">＋ 新增持股</button>
+          <button class="btn sm danger" data-act="del">刪除投組</button>
+          <button class="btn sm ghost" data-act="close">收合</button>
+        </div>
+      </div>
+      <div class="pf-detail-body">
+        <div class="scroll-hint">← 左右滑動可查看完整欄位 →</div>
+        <div class="tbl-scroll">
+          <table class="data">
+            <thead>
+              <tr>
+                <th style="width:78px;">市場</th>
+                <th style="width:92px;">代號</th>
+                <th style="width:100px;">名稱</th>
+                <th style="width:96px;">股數</th>
+                <th style="width:104px;">每股成本</th>
+                <th style="width:120px;">最新收盤</th>
+                <th style="width:110px;">市值(原幣)</th>
+                <th style="width:110px;">市值(TWD)</th>
+                <th style="width:126px;">損益(原幣)</th>
+                <th style="width:34px;"></th>
+              </tr>
+            </thead>
+            <tbody class="pf-rows"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="7" class="muted">本投組市值合計（TWD）</td>
+                <td id="pfSubtotal"></td>
+                <td id="pfSubPnl"></td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div class="empty-note pf-empty-rows" style="display:none;margin-top:12px;">此投組尚無持股，點選「＋ 新增持股」開始輸入。</div>
+      </div>
+    `;
+    host.appendChild(box);
+
+    const rename = box.querySelector('.pf-rename');
+    rename.addEventListener('change', ()=>{
+      p.name = rename.value.trim() || '未命名投組';
+      savePortfolios();
+      renderPortfolios();
+    });
+    box.querySelector('[data-act="add"]').addEventListener('click', ()=> addHolding(p.id));
+    box.querySelector('[data-act="close"]').addEventListener('click', ()=>{ expandedPid=null; renderPortfolios(); });
+    box.querySelector('[data-act="del"]').addEventListener('click', ()=>{
+      if(!confirm(`確定刪除投組「${p.name}」？其中的 ${rows.length} 檔持股也會一併刪除。`)) return;
+      portfolios = portfolios.filter(x=>x.id!==p.id);
+      holdings = holdings.filter(h=>h.pid!==p.id);
+      expandedPid = null;
+      savePortfolios(); saveHoldings();
+      renderPortfolios(); computeAll();
+    });
+
+    const tbody = box.querySelector('.pf-rows');
+    box.querySelector('.pf-empty-rows').style.display = rows.length ? 'none' : 'block';
+
+    let subValue=0, subCost=0;
+    rows.forEach(h=>{
+      const s = holdingStats(h, fx);
+      subValue += s.valueTwd; subCost += s.costTwd;
       const market = h.market || 'TW';
-      const fxMul = market==='US' ? fx : 1;
-      const value = (h.price!==null && h.price!==undefined) ? h.shares*h.price : 0;
-      const cost = h.shares*h.cost;
-      const valueTwd = value*fxMul;
-      const costTwd = cost*fxMul;
-      totalValueTwd += valueTwd;
-      totalCostTwd += costTwd;
-      totalValueOrig += value;
-      const pnl = value - cost;
-      const pnlPct = cost>0 ? (pnl/cost*100) : 0;
-      const currencyLabel = market==='US' ? 'USD' : 'TWD';
-      const codePlaceholder = market==='US' ? 'AAPL' : '2330';
-
+      const cur = market==='US' ? 'USD' : 'TWD';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
-          <select class="market-select" data-field="market">
+          <select data-field="market">
             <option value="TW" ${market==='TW'?'selected':''}>台股</option>
             <option value="US" ${market==='US'?'selected':''}>美股</option>
           </select>
         </td>
-        <td><input class="code" data-field="code" value="${h.code||''}" placeholder="${codePlaceholder}"></td>
-        <td class="name-cell">${h.name ? h.name : (h.code ? '<span style="color:var(--text-faint)">未取得</span>' : '—')}</td>
-        <td><input class="shares" type="number" data-field="shares" value="${h.shares||''}" placeholder="股數"></td>
-        <td><input class="cost" type="number" data-field="cost" value="${h.cost||''}" placeholder="成本/股 (${currencyLabel})"></td>
-        <td class="price-cell">
-          <input type="number" step="0.01" data-field="price" value="${h.price!==null&&h.price!==undefined?h.price:''}" placeholder="手動輸入">
-          <span class="src">${h.source ? h.source : '尚未抓取'}</span>
+        <td><input data-field="code" value="${esc(h.code||'')}" placeholder="${market==='US'?'AAPL':'2330'}"></td>
+        <td class="name-cell">${h.name ? esc(h.name) : (h.code ? '<span class="muted">未取得</span>' : '—')}</td>
+        <td><input type="number" data-field="shares" value="${h.shares||''}" placeholder="股數"></td>
+        <td><input type="number" data-field="cost" value="${h.cost||''}" placeholder="${cur}"></td>
+        <td>
+          <input type="number" step="0.01" data-field="price" value="${s.hasPrice?h.price:''}" placeholder="手動輸入">
+          <span class="src">${h.source ? esc(h.source) : '尚未抓取'}</span>
         </td>
-        <td>${fmtFull(value)} <span style="color:var(--text-faint);">${currencyLabel}</span></td>
-        <td>${fmtFull(valueTwd)}</td>
-        <td class="pnl ${pnl>=0?'pos':'neg'}">${cost>0 ? (pnl>=0?'+':'') + fmtFull(pnl) + ' (' + pnlPct.toFixed(1) + '%)' : '—'}</td>
-        <td><button class="row-del" data-id="${h.id}" title="刪除">×</button></td>
+        <td>${fmtFull(s.value)} <span class="muted">${cur}</span></td>
+        <td>${fmtFull(s.valueTwd)}</td>
+        <td class="pnl ${s.pnl>=0?'pos':'neg'}">${s.cost>0 ? (s.pnl>=0?'+':'') + fmtFull(s.pnl) + '（' + (s.pnl/s.cost*100).toFixed(1) + '%）' : '—'}</td>
+        <td><button class="row-del" title="刪除">×</button></td>
       `;
       tbody.appendChild(tr);
 
-      tr.querySelector('.market-select').addEventListener('change', (e)=>{
+      tr.querySelector('select').addEventListener('change', (e)=>{
         h.market = e.target.value;
-        h.price = null; h.name=''; h.source=null; // 換市場後價格需重新抓取
-        saveHoldings();
-        renderHoldings();
-        computeAll();
+        h.price = null; h.name=''; h.source=null;
+        saveHoldings(); renderPortfolios(); computeAll();
       });
-
       tr.querySelectorAll('input').forEach(inp=>{
         inp.addEventListener('change', (e)=>{
           const field = e.target.dataset.field;
@@ -992,113 +1172,114 @@
           h[field] = v;
           if(field==='price'){ h.source = '手動輸入'; }
           if(field==='code'){ h.name=''; h.price=null; h.source=null; }
-          saveHoldings();
-          renderHoldings();
-          computeAll();
+          saveHoldings(); renderPortfolios(); computeAll();
         });
       });
       tr.querySelector('.row-del').addEventListener('click', ()=>{
         holdings = holdings.filter(x=>x.id!==h.id);
-        saveHoldings();
-        renderHoldings();
-        computeAll();
+        saveHoldings(); renderPortfolios(); computeAll();
       });
     });
 
-    $('holdingsTotalValue').textContent = fmtFull(totalValueOrig) + ' (混合幣別, 僅供參考)';
-    $('holdingsTotalValueTwd').textContent = fmtFull(totalValueTwd);
-    const totalPnlTwd = totalValueTwd-totalCostTwd;
-    $('holdingsTotalPnl').textContent = totalCostTwd>0
-      ? (totalPnlTwd>=0?'+':'') + fmtFull(totalPnlTwd) + ' TWD (' + (totalPnlTwd/totalCostTwd*100).toFixed(1) + '%)'
-      : '—';
-
-    return totalValueTwd;
+    box.querySelector('#pfSubtotal').textContent = fmtFull(subValue);
+    const subPnl = subValue - subCost;
+    const subPnlEl = box.querySelector('#pfSubPnl');
+    subPnlEl.textContent = subCost>0 ? (subPnl>=0?'+':'') + fmtFull(subPnl) + ' TWD' : '—';
+    subPnlEl.className = 'pnl ' + (subPnl>=0?'pos':'neg');
   }
 
-  function currentStockValue(){
-    const fx = getFxRate();
-    return holdings.reduce((s,h)=>{
-      const mul = (h.market==='US') ? fx : 1;
-      const v = (h.price!==null && h.price!==undefined) ? h.shares*h.price*mul : 0;
-      return s+v;
-    }, 0);
-  }
-
-  /* ================= 人生事件（大額支出／貸款） ================= */
-  function addEvent(prefill){
-    lifeEvents.push(Object.assign({
-      id: eventIdSeq++, name:'', oneTime:0, oneTimeDate:'', monthly:0, startDate:'', endDate:''
-    }, prefill||{}));
+  /* ================= 人生事件 ================= */
+  function addEvent(){
+    const now = new Date();
+    lifeEvents.push({
+      id: eventIdSeq++, name:'', oneTime:0, monthly:0,
+      startYear: now.getFullYear(), startMonth: now.getMonth()+1, periods: 60
+    });
     saveEvents();
     renderEvents();
+    computeAll();
+  }
+
+  function eventTotalOf(ev, maxMonths){
+    const oneTime = parseFloat(ev.oneTime)||0;
+    const monthly = parseFloat(ev.monthly)||0;
+    const periods = (ev.periods==='' || ev.periods===null || ev.periods===undefined)
+      ? maxMonths : (parseInt(ev.periods,10)||0);
+    return oneTime + monthly*periods;
   }
 
   function renderEvents(){
     const tbody = $('eventsBody');
     tbody.innerHTML = '';
     $('eventsEmpty').style.display = lifeEvents.length ? 'none' : 'block';
+    const maxMonths = planTotalMonths();
 
     lifeEvents.forEach(ev=>{
       const tr = document.createElement('tr');
+      const total = eventTotalOf(ev, maxMonths);
       tr.innerHTML = `
-        <td><input class="ev-name" data-field="name" value="${ev.name||''}" placeholder="例如：購車頭期款"></td>
-        <td><input class="ev-money" type="number" data-field="oneTime" value="${ev.oneTime||''}" placeholder="TWD"></td>
-        <td><input class="ev-date" type="month" data-field="oneTimeDate" value="${ev.oneTimeDate||''}"></td>
-        <td><input class="ev-money" type="number" data-field="monthly" value="${ev.monthly||''}" placeholder="TWD/月"></td>
-        <td><input class="ev-date" type="month" data-field="startDate" value="${ev.startDate||''}"></td>
-        <td><input class="ev-date" type="month" data-field="endDate" value="${ev.endDate||''}"></td>
-        <td><button class="row-del" data-id="${ev.id}" title="刪除">×</button></td>
+        <td><input data-field="name" value="${esc(ev.name||'')}" placeholder="例如：購車"></td>
+        <td><input type="number" data-field="oneTime" value="${ev.oneTime||''}" placeholder="TWD"></td>
+        <td><input type="number" data-field="monthly" value="${ev.monthly||''}" placeholder="TWD/月"></td>
+        <td><input type="number" data-field="startYear" value="${ev.startYear||''}" placeholder="2027"></td>
+        <td><input type="number" min="1" max="12" data-field="startMonth" value="${ev.startMonth||''}" placeholder="1-12"></td>
+        <td><input type="number" data-field="periods" value="${(ev.periods===''||ev.periods===null||ev.periods===undefined)?'':ev.periods}" placeholder="期數"></td>
+        <td class="muted">${total>0 ? '總支出 '+fmtMoney(total) : '—'}</td>
+        <td><button class="row-del" title="刪除">×</button></td>
       `;
       tbody.appendChild(tr);
 
       tr.querySelectorAll('input').forEach(inp=>{
         inp.addEventListener('change', (e)=>{
-          const field = e.target.dataset.field;
+          const f = e.target.dataset.field;
           let v = e.target.value;
-          if(field==='oneTime' || field==='monthly'){ v = v==='' ? 0 : parseFloat(v); }
-          ev[field] = v;
+          if(f==='oneTime' || f==='monthly'){ v = v==='' ? 0 : parseFloat(v); }
+          if(f==='startYear' || f==='startMonth'){ v = v==='' ? '' : parseInt(v,10); }
+          if(f==='periods'){ v = v==='' ? '' : Math.max(0, parseInt(v,10)||0); }
+          ev[f] = v;
           saveEvents();
+          renderEvents();
           computeAll();
         });
       });
       tr.querySelector('.row-del').addEventListener('click', ()=>{
         lifeEvents = lifeEvents.filter(x=>x.id!==ev.id);
-        saveEvents();
-        renderEvents();
-        computeAll();
+        saveEvents(); renderEvents(); computeAll();
       });
     });
   }
 
-  // 將所有人生事件轉換成「每月現金流出」陣列，index 0 代表本月，最多至 totalMonths-1
+  function planTotalMonths(){
+    const cfg = readInputs();
+    const birth = new Date(cfg.birthDate);
+    const target = new Date(birth);
+    target.setFullYear(birth.getFullYear() + cfg.retireAge);
+    const m = monthsBetween(birth, target);
+    return Math.max(12, Math.ceil(m/12)*12);
+  }
+
+  // 將人生事件轉為每月現金流出陣列(index 0 = 本月)
   function computeEventCashflows(totalMonths, applyEvents){
     const flows = new Array(Math.max(0,totalMonths)).fill(0);
     if(!applyEvents) return flows;
     const now = new Date();
-    const baseYear = now.getFullYear(), baseMonth = now.getMonth();
-    function monthIndexOf(dateStr){
-      if(!dateStr) return null;
-      const parts = dateStr.split('-');
-      if(parts.length<2) return null;
-      const y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1;
-      if(isNaN(y)||isNaN(m)) return null;
-      return (y-baseYear)*12 + (m-baseMonth);
-    }
+    const baseY = now.getFullYear(), baseM = now.getMonth(); // 0-based
+
     lifeEvents.forEach(ev=>{
       const oneTime = parseFloat(ev.oneTime)||0;
       const monthly = parseFloat(ev.monthly)||0;
-      if(oneTime>0 && ev.oneTimeDate){
-        const idx = monthIndexOf(ev.oneTimeDate);
-        if(idx!==null && idx>=0 && idx<totalMonths) flows[idx] += oneTime;
-      }
-      if(monthly>0 && ev.startDate){
-        const startIdx = monthIndexOf(ev.startDate);
-        if(startIdx!==null){
-          const endIdx = ev.endDate ? monthIndexOf(ev.endDate) : (totalMonths-1);
-          const s = Math.max(0, startIdx);
-          const e = Math.min(totalMonths-1, (endIdx===null? totalMonths-1 : endIdx));
-          for(let i=s; i<=e; i++){ flows[i] += monthly; }
-        }
+      const y = parseInt(ev.startYear,10), m = parseInt(ev.startMonth,10);
+      if(isNaN(y) || isNaN(m) || m<1 || m>12) return;
+      const startIdx = (y-baseY)*12 + ((m-1)-baseM);
+
+      if(oneTime>0 && startIdx>=0 && startIdx<totalMonths){ flows[startIdx] += oneTime; }
+
+      if(monthly>0){
+        const periods = (ev.periods==='' || ev.periods===null || ev.periods===undefined)
+          ? totalMonths : (parseInt(ev.periods,10)||0);
+        const s = Math.max(0, startIdx);
+        const e = Math.min(totalMonths-1, startIdx + periods - 1);
+        for(let i=s; i<=e; i++){ flows[i] += monthly; }
       }
     });
     return flows;
@@ -1108,37 +1289,7 @@
     return lifeEvents.some(ev => (parseFloat(ev.oneTime)||0)>0 || (parseFloat(ev.monthly)||0)>0);
   }
 
-  function renderEventImpact(buildPlanFn, expenseAtRetirement, totalYears){
-    const impactEl = $('eventImpact');
-    if(!eventsHaveContent()){ impactEl.style.display='none'; return; }
-
-    const planWith = buildPlanFn(true);
-    const planWithout = buildPlanFn(false);
-    const finalWith = planWith[planWith.length-1].balance;
-    const finalWithout = planWithout[planWithout.length-1].balance;
-    const deltaAsset = finalWith - finalWithout;
-    const swrWith = finalWith>0 ? expenseAtRetirement/finalWith*100 : 0;
-    const swrWithout = finalWithout>0 ? expenseAtRetirement/finalWithout*100 : 0;
-    const deltaSwr = swrWith - swrWithout;
-    const flows = computeEventCashflows(totalYears*12, true);
-    const totalSpent = flows.reduce((s,v)=>s+v, 0);
-
-    const impactAssetEl = $('impactAsset');
-    impactAssetEl.textContent = (deltaAsset>=0?'+':'') + fmtMoney(deltaAsset);
-    impactAssetEl.className = deltaAsset<0 ? 'neg' : 'pos';
-
-    const impactSwrEl = $('impactSwr');
-    impactSwrEl.textContent = (deltaSwr>=0?'+':'') + deltaSwr.toFixed(2) + ' 百分點';
-    impactSwrEl.className = deltaSwr>0 ? 'neg' : 'pos';
-
-    $('impactTotal').textContent = fmtMoney(totalSpent);
-    impactEl.style.display='flex';
-  }
-
   /* ================= 股價抓取 ================= */
-
-  // 依序嘗試: 1) 直接呼叫  2) 多個公開 CORS Proxy 輪流嘗試(任一成功即採用)
-  // 部署在 github.io 等網域時, TWSE/TPEx 通常會擋跨網域請求, 此時自動改走 proxy。
   const CORS_PROXIES = [
     url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
     url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
@@ -1148,18 +1299,15 @@
   async function fetchWithTimeout(url, ms){
     const ctrl = new AbortController();
     const t = setTimeout(()=>ctrl.abort(), ms);
-    try{
-      const res = await fetch(url, {signal: ctrl.signal});
-      return res;
-    } finally { clearTimeout(t); }
+    try{ return await fetch(url, {signal: ctrl.signal}); }
+    finally { clearTimeout(t); }
   }
 
   async function fetchJsonWithFallback(url){
     try{
       const res = await fetchWithTimeout(url, 6000);
       if(res.ok) return { data: await res.json(), via:'direct' };
-    }catch(e){ /* 直連失敗, 往下走 proxy */ }
-
+    }catch(e){}
     for(const buildProxyUrl of CORS_PROXIES){
       try{
         const res = await fetchWithTimeout(buildProxyUrl(url), 8000);
@@ -1167,7 +1315,7 @@
           const data = await res.json();
           if(data) return { data, via:'proxy' };
         }
-      }catch(e){ /* 這個 proxy 失敗, 換下一個 */ }
+      }catch(e){}
     }
     return null;
   }
@@ -1176,8 +1324,7 @@
     try{
       const res = await fetchWithTimeout(url, 6000);
       if(res.ok) return { text: await res.text(), via:'direct' };
-    }catch(e){ /* 直連失敗, 往下走 proxy */ }
-
+    }catch(e){}
     for(const buildProxyUrl of CORS_PROXIES){
       try{
         const res = await fetchWithTimeout(buildProxyUrl(url), 8000);
@@ -1185,12 +1332,11 @@
           const text = await res.text();
           if(text) return { text, via:'proxy' };
         }
-      }catch(e){ /* 換下一個 proxy */ }
+      }catch(e){}
     }
     return null;
   }
 
-  // 美股單一代碼報價: 先試 Yahoo Finance chart API, 失敗再試 Stooq CSV
   async function fetchUsQuote(code){
     const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(code)}?interval=1d&range=1d`;
     const yRes = await fetchJsonWithFallback(yUrl);
@@ -1201,7 +1347,6 @@
         return { price: parseFloat(price), name: meta.longName || meta.shortName || code.toUpperCase(), via: yRes.via, provider:'Yahoo' };
       }
     }
-    // fallback: Stooq
     const sUrl = `https://stooq.com/q/l/?s=${encodeURIComponent(code.toLowerCase())}.us&f=sd2t2ohlcv&h&e=csv`;
     const sRes = await fetchTextWithFallback(sUrl);
     if(sRes && sRes.text){
@@ -1209,9 +1354,7 @@
       if(lines.length>=2){
         const cols = lines[1].split(',');
         const close = parseFloat(cols[6]);
-        if(!isNaN(close)){
-          return { price: close, name: code.toUpperCase(), via: sRes.via, provider:'Stooq' };
-        }
+        if(!isNaN(close)) return { price: close, name: code.toUpperCase(), via: sRes.via, provider:'Stooq' };
       }
     }
     return null;
@@ -1219,9 +1362,7 @@
 
   async function fetchFxRate(){
     const res = await fetchJsonWithFallback('https://open.er-api.com/v6/latest/USD');
-    if(res && res.data && res.data.rates && res.data.rates.TWD){
-      return parseFloat(res.data.rates.TWD);
-    }
+    if(res && res.data && res.data.rates && res.data.rates.TWD) return parseFloat(res.data.rates.TWD);
     return null;
   }
 
@@ -1231,18 +1372,15 @@
     statusEl.textContent = '抓取中…（若走備援 Proxy 可能需要數秒）';
 
     let twseMap = {}, tpexMap = {};
-    let twseOk = false, tpexOk = false;
-    let usedProxy = false;
+    let twseOk = false, tpexOk = false, usedProxy = false;
 
-    const twStockCodes = holdings.filter(h=>(h.market||'TW')==='TW' && h.code);
-    const usStockCodes = holdings.filter(h=>h.market==='US' && h.code);
+    const twList = holdings.filter(h=>(h.market||'TW')==='TW' && h.code);
+    const usList = holdings.filter(h=>h.market==='US' && h.code);
 
-    // ---- 匯率 ----
     const fxRate = await fetchFxRate();
     if(fxRate){ $('usdTwdRate').value = fxRate.toFixed(3); scheduleSaveConfig(); }
 
-    // ---- 台股 (僅在有台股持股時才呼叫) ----
-    if(twStockCodes.length){
+    if(twList.length){
       const twseResult = await fetchJsonWithFallback('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL');
       if(twseResult && Array.isArray(twseResult.data)){
         twseResult.data.forEach(row=>{
@@ -1251,14 +1389,12 @@
         twseOk = true;
         if(twseResult.via==='proxy') usedProxy = true;
       }
-
       const tpexResult = await fetchJsonWithFallback('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes');
       if(tpexResult && Array.isArray(tpexResult.data)){
         tpexResult.data.forEach(row=>{
           const code = row.SecuritiesCompanyCode || row.CompanyCode || row.Code || row['證券代號'];
           const name = row.CompanyName || row.Name || row['證券名稱'];
-          const closeRaw = row.Close || row.ClosingPrice || row['收盤價'];
-          const close = parseFloat(closeRaw);
+          const close = parseFloat(row.Close || row.ClosingPrice || row['收盤價']);
           if(code && !isNaN(close)){ tpexMap[code] = { name: name||'', price: close }; }
         });
         tpexOk = true;
@@ -1266,65 +1402,75 @@
       }
     }
 
-    let matched = 0, unmatched = 0;
-    let usOk = usStockCodes.length===0; // 沒有美股持股就視為不需要美股來源
+    let matched=0, unmatched=0;
+    let usOk = usList.length===0;
 
     for(const h of holdings){
       if(!h.code) continue;
-      const code = h.code.trim();
+      const code = String(h.code).trim();
       if((h.market||'TW')==='TW'){
         if(twseMap[code]){
           h.price = twseMap[code].price; h.name = twseMap[code].name;
-          h.source = '上市(TWSE) · ' + new Date().toLocaleDateString('zh-TW');
-          matched++;
+          h.source = '上市 TWSE · ' + new Date().toLocaleDateString('zh-TW'); matched++;
         } else if(tpexMap[code]){
           h.price = tpexMap[code].price; h.name = tpexMap[code].name;
-          h.source = '上櫃(TPEx) · ' + new Date().toLocaleDateString('zh-TW');
-          matched++;
-        } else {
-          h.source = '找不到，請手動輸入'; unmatched++;
-        }
-      } else { // 美股, 逐檔查詢
+          h.source = '上櫃 TPEx · ' + new Date().toLocaleDateString('zh-TW'); matched++;
+        } else { h.source = '找不到，請手動輸入'; unmatched++; }
+      } else {
         const q = await fetchUsQuote(code);
         if(q){
           h.price = q.price; h.name = q.name;
           h.source = q.provider + ' · ' + new Date().toLocaleDateString('zh-TW');
           if(q.via==='proxy') usedProxy = true;
-          usOk = true;
-          matched++;
-        } else {
-          h.source = '找不到，請手動輸入'; unmatched++;
-        }
+          usOk = true; matched++;
+        } else { h.source = '找不到，請手動輸入'; unmatched++; }
       }
     }
 
     await saveHoldings();
-    renderHoldings();
+    renderPortfolios();
     computeAll();
 
-    const twNeeded = twStockCodes.length>0;
-    const twFailed = twNeeded && !twseOk && !tpexOk;
-    const usNeeded = usStockCodes.length>0;
-    const usFailed = usNeeded && !usOk;
+    const twFailed = twList.length>0 && !twseOk && !tpexOk;
+    const usFailed = usList.length>0 && !usOk;
 
     if(twFailed && usFailed){
       statusEl.className = 'fetch-status err';
       statusEl.textContent = '台股與美股皆無法自動連線，請手動輸入股價';
     } else if(twFailed){
       statusEl.className = 'fetch-status err';
-      statusEl.textContent = '台股來源無法連線，美股已更新，台股請手動輸入';
+      statusEl.textContent = '台股來源無法連線，請手動輸入台股價格';
     } else if(usFailed){
       statusEl.className = 'fetch-status err';
-      statusEl.textContent = '美股來源無法連線，台股已更新，美股請手動輸入';
+      statusEl.textContent = '美股來源無法連線，請手動輸入美股價格';
     } else {
       statusEl.className = 'fetch-status ok';
-      statusEl.textContent = `已更新 ${matched} 檔${unmatched? '，' + unmatched + ' 檔查無資料' : ''}${usedProxy? '（部分經 Proxy 轉發）':''}${fxRate? ' ・ 匯率 '+fxRate.toFixed(2):''} · ${new Date().toLocaleTimeString('zh-TW')}`;
+      statusEl.textContent = `已更新 ${matched} 檔${unmatched? '，'+unmatched+' 檔查無資料':''}${usedProxy? '（部分經 Proxy）':''}${fxRate? ' · 匯率 '+fxRate.toFixed(2):''} · ${new Date().toLocaleTimeString('zh-TW')}`;
     }
   }
 
   /* ================= 主計算 ================= */
   function monthsBetween(d1,d2){
     return (d2.getFullYear()-d1.getFullYear())*12 + (d2.getMonth()-d1.getMonth());
+  }
+
+  function buildPlanPath(cfg, curStock, totalYears, curAgeFloor, withEvents){
+    const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
+    const flows = computeEventCashflows(totalYears*12, withEvents);
+    let bal = curStock;
+    const plan = [{ yearIdx:0, age: curAgeFloor, balance: curStock + cfg.curCash }];
+    let mIdx = 0;
+    for(let y=1; y<=totalYears; y++){
+      for(let i=0;i<12;i++){
+        bal += cfg.monthlyDca;
+        bal -= (flows[mIdx]||0);
+        if(bal<0) bal = 0;
+        bal *= (1+monthlyRate);
+        mIdx++;
+      }
+      plan.push({ yearIdx:y, age: curAgeFloor+y, balance: bal + cfg.curCash });
+    }
+    return plan;
   }
 
   function computeAll(){
@@ -1339,61 +1485,19 @@
     $('curAgeLabel').textContent = curAgeExact.toFixed(1);
     $('targetDateLabel').textContent = targetDate.toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'});
 
-    // ---- 倒數：今天 -> 退休日 ----
-    let diffMs = targetDate - now;
-    if(diffMs < 0) diffMs = 0;
-    const oneDay = 24*3600*1000;
-    const years = Math.floor(diffMs/(365.2425*oneDay));
-    const afterYears = diffMs - years*365.2425*oneDay;
-    const months = Math.floor(afterYears/(30.4368*oneDay));
-    const afterMonths = afterYears - months*30.4368*oneDay;
-    const days = Math.floor(afterMonths/oneDay);
-    const hours = Math.floor((afterMonths - days*oneDay)/3600000);
-    $('cdYears').textContent = years;
-    $('cdMonths').textContent = months;
-    $('cdDays').textContent = days;
-    $('cdHours').textContent = hours;
+    tickCountdown();
 
-    // ---- 儀表盤：以「監控起始日」到「退休日」為100%基準 ----
-    const start = planStartDate ? new Date(planStartDate) : now;
-    const totalSpanMs = Math.max(1, targetDate - start);
-    const elapsedMs = Math.max(0, now - start);
-    const pctElapsed = Math.max(0, Math.min(100, elapsedMs/totalSpanMs*100));
-
-    const R = 96, C = 2*Math.PI*R;
-    const dial = $('dialProgress');
-    dial.setAttribute('stroke-dasharray', C.toFixed(1));
-    dial.setAttribute('stroke-dashoffset', (C*(1-pctElapsed/100)).toFixed(1));
-    $('dialPct').textContent = pctElapsed.toFixed(1)+'%';
     $('dialSince').textContent = '起算：' + (planStartDate||todayStr());
 
-    // ---- 未來計畫路徑（月複利，可套用人生事件現金流） ----
-    const totalMonths = monthsBetween(birth, targetDate);
-    const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
+    const totalMonths = Math.max(0, monthsBetween(now, targetDate));
     const totalYears = Math.max(1, Math.ceil(totalMonths/12));
-    const applyEvents = $('eventsEnabled') ? $('eventsEnabled').checked : false;
+    const applyEvents = $('eventsEnabled').checked;
+    const curAgeFloor = Math.floor(curAgeExact);
 
-    function buildPlan(withEvents){
-      const flows = computeEventCashflows(totalYears*12, withEvents);
-      let bal = curStock;
-      const plan = [{yearIdx:0, age: Math.floor(curAgeExact), balance: curStock + cfg.curCash}];
-      let mIdx = 0;
-      for(let y=1; y<=totalYears; y++){
-        for(let i=0;i<12;i++){
-          bal += cfg.monthlyDca;
-          bal -= (flows[mIdx]||0);
-          if(bal<0) bal = 0;
-          bal *= (1+monthlyRate);
-          mIdx++;
-        }
-        plan.push({yearIdx:y, age: Math.floor(curAgeExact)+y, balance: bal + cfg.curCash});
-      }
-      return plan;
-    }
+    const planWith = buildPlanPath(cfg, curStock, totalYears, curAgeFloor, applyEvents);
+    const planNoEvents = buildPlanPath(cfg, curStock, totalYears, curAgeFloor, false);
 
-    const yearlyPlan = buildPlan(applyEvents);
-
-    const finalAsset = yearlyPlan[yearlyPlan.length-1].balance;
+    const finalAsset = planWith[planWith.length-1].balance;
     const contributed = cfg.monthlyDca * totalMonths;
     const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
     const swr = finalAsset>0 ? (expenseAtRetirement/finalAsset*100) : 0;
@@ -1410,102 +1514,91 @@
     else { swrMetricEl.classList.add('warn'); $('metricSwrSub').textContent='顯著高於安全基準 ~4%'; }
 
     const curActual = curStock + cfg.curCash;
-    const planAtNow = yearlyPlan[0].balance;
-    const progressPct = planAtNow>0 ? (curActual/planAtNow*100) : 100;
-    $('metricProgress').textContent = progressPct.toFixed(0)+'%';
-    $('metricProgressSub').textContent = '今日實際 ' + fmtMoney(curActual) + ' / 計畫 ' + fmtMoney(planAtNow);
+    $('metricProgress').textContent = fmtMoney(curActual);
+    $('metricProgressSub').textContent = '股票 ' + fmtMoney(curStock) + ' ＋ 現金 ' + fmtMoney(cfg.curCash);
 
-    renderEventImpact(buildPlan, expenseAtRetirement, totalYears);
+    // 人生事件影響
+    const impactEl = $('eventImpact');
+    if(eventsHaveContent()){
+      const finalWith = buildPlanPath(cfg, curStock, totalYears, curAgeFloor, true);
+      const fW = finalWith[finalWith.length-1].balance;
+      const fN = planNoEvents[planNoEvents.length-1].balance;
+      const deltaAsset = fW - fN;
+      const swrW = fW>0 ? expenseAtRetirement/fW*100 : 0;
+      const swrN = fN>0 ? expenseAtRetirement/fN*100 : 0;
+      const deltaSwr = swrW - swrN;
+      const flows = computeEventCashflows(totalYears*12, true);
+      const totalSpent = flows.reduce((s,v)=>s+v, 0);
 
-    renderChart(yearlyPlan);
-    renderLedger(yearlyPlan);
+      const a = $('impactAsset');
+      a.textContent = (deltaAsset>=0?'+':'') + fmtMoney(deltaAsset);
+      a.className = deltaAsset<0 ? 'neg' : 'pos';
+      const b = $('impactSwr');
+      b.textContent = (deltaSwr>=0?'+':'') + deltaSwr.toFixed(2) + ' pp';
+      b.className = deltaSwr>0 ? 'neg' : 'pos';
+      $('impactTotal').textContent = fmtMoney(totalSpent);
+      impactEl.style.display = 'grid';
+    } else {
+      impactEl.style.display = 'none';
+    }
+
+    renderGrowthChart(planWith, planNoEvents, applyEvents && eventsHaveContent());
   }
 
-  function renderChart(yearlyPlan){
-    const labels = yearlyPlan.map(p => '第'+p.yearIdx+'年 (age '+p.age+')');
-    const planData = yearlyPlan.map(p => Math.round(p.balance));
-    const actualData = yearlyPlan.map(p => {
-      const v = ledgerActuals[p.yearIdx];
-      return (v!==undefined && v!==null && v!=='') ? Math.round(v) : null;
-    });
+  const AXIS_COLOR = '#93a2b8';
+  const GRID_COLOR = 'rgba(13,23,41,0.06)';
+  const AXIS_FONT = {family:'JetBrains Mono', size:10};
 
+  function renderGrowthChart(planWith, planNoEvents, showBoth){
+    const labels = planWith.map(p => '第 '+p.yearIdx+' 年 · '+p.age+' 歲');
     const ctx = document.getElementById('growthChart').getContext('2d');
-    if(chart) chart.destroy();
-    chart = new Chart(ctx, {
+    const grad = ctx.createLinearGradient(0,0,0,250);
+    grad.addColorStop(0,'rgba(37,99,235,0.22)');
+    grad.addColorStop(1,'rgba(37,99,235,0.01)');
+
+    const datasets = [{
+      label:'計畫路徑', data: planWith.map(p=>Math.round(p.balance)),
+      borderColor:'#2563eb', backgroundColor:grad,
+      borderWidth:2.5, pointRadius:0, tension:0.25, fill:true
+    }];
+    if(showBoth){
+      datasets.push({
+        label:'未含人生事件', data: planNoEvents.map(p=>Math.round(p.balance)),
+        borderColor:'#94a3b8', backgroundColor:'transparent',
+        borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:0.25, fill:false
+      });
+    }
+
+    if(growthChart) growthChart.destroy();
+    growthChart = new Chart(ctx, {
       type:'line',
-      data:{
-        labels,
-        datasets:[
-          { label:'計畫路徑', data: planData, borderColor:'#c9a227', backgroundColor:'rgba(201,162,39,0.08)',
-            borderWidth:2, pointRadius:0, tension:0.25, fill:true },
-          { label:'實際資產', data: actualData, borderColor:'#4f9c78', backgroundColor:'rgba(79,156,120,0.12)',
-            borderWidth:2, pointRadius:3, pointBackgroundColor:'#4f9c78', tension:0.25, fill:false, spanGaps:true }
-        ]
-      },
+      data:{ labels, datasets },
       options:{
         responsive:true,
-        plugins:{ legend:{display:false},
-          tooltip:{ callbacks:{ label:(c)=> c.dataset.label+': '+ (c.raw!==null? c.raw.toLocaleString():'—') } }
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor:'rgba(13,23,41,0.92)', titleFont:{family:'JetBrains Mono',size:11},
+            bodyFont:{family:'JetBrains Mono',size:11}, padding:10, cornerRadius:8,
+            callbacks:{ label:(c)=> c.dataset.label+'：'+ fmtFull(c.raw) }
+          }
         },
         scales:{
-          x:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, maxRotation:60, minRotation:0, autoSkip:true, maxTicksLimit:8 }, grid:{ color:'rgba(255,255,255,0.04)' } },
-          y:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, callback:(v)=> fmtMoney(v) }, grid:{ color:'rgba(255,255,255,0.05)' } }
+          x:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, maxRotation:50, autoSkip:true, maxTicksLimit:8 }, grid:{ color:GRID_COLOR } },
+          y:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, callback:(v)=> fmtMoney(v) }, grid:{ color:GRID_COLOR } }
         }
       }
     });
   }
 
-  function renderLedger(yearlyPlan){
-    const tbody = $('ledgerBody');
-    tbody.innerHTML = '';
-    const now = new Date();
-    const curYear = now.getFullYear();
-
-    yearlyPlan.forEach(p => {
-      const tr = document.createElement('tr');
-      const calYear = curYear + p.yearIdx;
-      const actualVal = ledgerActuals[p.yearIdx];
-      const achieveRate = (actualVal!==undefined && actualVal!=='' && actualVal!==null)
-        ? (actualVal/p.balance*100) : null;
-
-      let tagHtml = '<span class="tag future">尚未填報</span>';
-      if(achieveRate!==null){
-        tagHtml = achieveRate>=95
-          ? '<span class="tag ontrack">達標 ●</span>'
-          : '<span class="tag behind">落後 ▲</span>';
-      }
-
-      tr.innerHTML = `
-        <td>第 ${p.yearIdx} 年（${calYear}）</td>
-        <td>${p.age}</td>
-        <td>${fmtFull(p.balance)}</td>
-        <td><input class="actual-input" type="number" placeholder="填入實際"
-              data-year="${p.yearIdx}" value="${actualVal!==undefined?actualVal:''}"></td>
-        <td>${achieveRate!==null ? achieveRate.toFixed(0)+'%' : '—'}</td>
-        <td>${tagHtml}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    tbody.querySelectorAll('.actual-input').forEach(inp=>{
-      inp.addEventListener('change', async (e)=>{
-        const y = e.target.dataset.year;
-        const v = e.target.value;
-        if(v===''){ delete ledgerActuals[y]; } else { ledgerActuals[y] = parseFloat(v); }
-        await saveLedger();
-        computeAll();
-      });
-    });
-  }
-
-  /* ================= 蒙地卡羅模擬 ================= */
+  /* ================= 蒙地卡羅 ================= */
   function boxMullerRandom(){
     let u=0, v=0;
     while(u===0) u = Math.random();
     while(v===0) v = Math.random();
     return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
   }
-
   function percentileOf(sortedArr, p){
     const idx = Math.min(sortedArr.length-1, Math.max(0, Math.round(p*(sortedArr.length-1))));
     return sortedArr[idx];
@@ -1515,15 +1608,15 @@
     const cfg = readInputs();
     const curStock = currentStockValue();
     const birth = new Date(cfg.birthDate);
+    const now = new Date();
     const targetDate = new Date(birth);
     targetDate.setFullYear(birth.getFullYear() + cfg.retireAge);
-    const totalMonths = monthsBetween(birth, targetDate);
+    const totalMonths = Math.max(0, monthsBetween(now, targetDate));
     const totalYears = Math.max(1, Math.ceil(totalMonths/12));
     const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
-    const annualVol = Math.max(0, parseFloat($('mcVol').value) || 15) / 100;
-    const monthlyVol = annualVol / Math.sqrt(12);
+    const monthlyVol = (Math.max(0, parseFloat($('mcVol').value) || 15)/100) / Math.sqrt(12);
     const runs = parseInt($('mcRuns').value, 10) || 500;
-    const applyEvents = $('eventsEnabled') ? $('eventsEnabled').checked : false;
+    const applyEvents = $('eventsEnabled').checked;
     const eventFlows = computeEventCashflows(totalYears*12, applyEvents);
     const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
 
@@ -1538,7 +1631,6 @@
     const yearlySamples = [];
     for(let y=0; y<=totalYears; y++) yearlySamples.push([]);
     const finalBalances = [];
-
     const batchSize = Math.max(1, Math.round(runs/25));
     let completed = 0;
 
@@ -1551,8 +1643,7 @@
           let mIdx = 0;
           for(let y=1; y<=totalYears; y++){
             for(let i=0;i<12;i++){
-              const shock = boxMullerRandom() * monthlyVol;
-              const r = monthlyRate + shock;
+              const r = monthlyRate + boxMullerRandom()*monthlyVol;
               bal += cfg.monthlyDca;
               bal -= (eventFlows[mIdx]||0);
               if(bal<0) bal = 0;
@@ -1563,11 +1654,9 @@
           }
           finalBalances.push(bal + cfg.curCash);
         }
-        const pct = Math.round(completed/runs*100);
-        $('mcProgressBar').style.width = pct+'%';
-        $('mcProgressText').textContent = `模擬中… ${completed}/${runs} 條路徑`;
-        if(completed<runs){ setTimeout(processBatch, 0); }
-        else { resolve(); }
+        $('mcProgressBar').style.width = Math.round(completed/runs*100)+'%';
+        $('mcProgressText').textContent = `模擬中… ${completed} / ${runs} 條路徑`;
+        if(completed<runs){ setTimeout(processBatch, 0); } else { resolve(); }
       }
       processBatch();
     });
@@ -1575,9 +1664,9 @@
     $('btnRunMc').disabled = false;
     $('mcProgressWrap').style.display = 'none';
 
-    const yearsLabels=[], p10=[], p25=[], p50=[], p75=[], p90=[];
+    const labels=[], p10=[], p25=[], p50=[], p75=[], p90=[];
     for(let y=0; y<=totalYears; y++){
-      yearsLabels.push('第 '+y+' 年');
+      labels.push('第 '+y+' 年');
       const sorted = [...yearlySamples[y]].sort((a,b)=>a-b);
       p10.push(percentileOf(sorted,0.10));
       p25.push(percentileOf(sorted,0.25));
@@ -1589,22 +1678,20 @@
     const successCount = finalBalances.filter(b => b>0 && (expenseAtRetirement/b*100)<=4.5).length;
     const successRate = finalBalances.length ? (successCount/finalBalances.length*100) : 0;
 
-    const successEl = $('mcSuccessRate');
-    successEl.textContent = successRate.toFixed(0)+'%';
-    successEl.className = 'mc-stat-value ' + (successRate>=70 ? 'good' : (successRate<40 ? 'warn' : ''));
+    const sEl = $('mcSuccessRate');
+    sEl.textContent = successRate.toFixed(0)+'%';
+    sEl.className = 'mc-stat-value ' + (successRate>=70 ? 'good' : (successRate<40 ? 'warn' : ''));
     $('mcMedian').textContent = fmtMoney(p50[p50.length-1]);
     $('mcP90').textContent = fmtMoney(p90[p90.length-1]);
     $('mcP10').textContent = fmtMoney(p10[p10.length-1]);
     $('mcSummary').style.display = 'grid';
 
-    renderMcFanChart(yearsLabels, p10, p25, p50, p75, p90);
+    renderMcFanChart(labels, p10, p25, p50, p75, p90);
     $('mcFanChart').style.display = 'block';
 
     mcYearlySamplesCache = yearlySamples;
     const slider = $('mcYearSlider');
-    slider.min = 0;
-    slider.max = totalYears;
-    slider.value = totalYears;
+    slider.min = 0; slider.max = totalYears; slider.value = totalYears;
     $('mcYearExplorer').style.display = 'block';
     updateMcHistogram(totalYears);
   }
@@ -1617,34 +1704,41 @@
       data:{
         labels,
         datasets:[
-          { label:'保守（後10%）', data:p10, borderColor:'rgba(201,162,39,0)', backgroundColor:'rgba(201,162,39,0.09)', borderWidth:0, pointRadius:0, fill:false, tension:0.2 },
-          { label:'10–90% 區間', data:p90, borderColor:'rgba(201,162,39,0.35)', backgroundColor:'rgba(201,162,39,0.12)', borderWidth:1, pointRadius:0, fill:'-1', tension:0.2 },
-          { label:'25%分位', data:p25, borderColor:'rgba(201,162,39,0)', backgroundColor:'rgba(201,162,39,0)', borderWidth:0, pointRadius:0, fill:false, tension:0.2 },
-          { label:'25–75% 區間', data:p75, borderColor:'rgba(201,162,39,0.45)', backgroundColor:'rgba(201,162,39,0.24)', borderWidth:1, pointRadius:0, fill:'-1', tension:0.2 },
-          { label:'中位數路徑', data:p50, borderColor:'#e8c765', backgroundColor:'transparent', borderWidth:2.5, pointRadius:0, fill:false, tension:0.2 },
+          { label:'p10', data:p10, borderColor:'rgba(0,0,0,0)', backgroundColor:'rgba(0,0,0,0)', borderWidth:0, pointRadius:0, fill:false, tension:0.2 },
+          { label:'10–90% 區間', data:p90, borderColor:'rgba(6,182,212,0.35)', backgroundColor:'rgba(6,182,212,0.13)', borderWidth:1, pointRadius:0, fill:'-1', tension:0.2 },
+          { label:'p25', data:p25, borderColor:'rgba(0,0,0,0)', backgroundColor:'rgba(0,0,0,0)', borderWidth:0, pointRadius:0, fill:false, tension:0.2 },
+          { label:'25–75% 區間', data:p75, borderColor:'rgba(37,99,235,0.4)', backgroundColor:'rgba(37,99,235,0.20)', borderWidth:1, pointRadius:0, fill:'-1', tension:0.2 },
+          { label:'中位數路徑', data:p50, borderColor:'#2563eb', backgroundColor:'transparent', borderWidth:2.5, pointRadius:0, fill:false, tension:0.2 },
         ]
       },
       options:{
         responsive:true,
         interaction:{ mode:'index', intersect:false },
         plugins:{
-          legend:{ display:true, labels:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10.5}, filter:(item)=> item.text!=='保守（後10%）' && item.text!=='25%分位' } },
-          tooltip:{ callbacks:{ label:(c)=> c.dataset.label+': '+ (c.raw!==null? fmtMoney(c.raw):'—') } }
+          legend:{ display:true, labels:{ color:'#5a6a82', font:{family:'JetBrains Mono', size:10.5}, boxWidth:12, boxHeight:3,
+            filter:(item)=> item.text!=='p10' && item.text!=='p25' } },
+          tooltip:{
+            backgroundColor:'rgba(13,23,41,0.92)', titleFont:{family:'JetBrains Mono',size:11},
+            bodyFont:{family:'JetBrains Mono',size:11}, padding:10, cornerRadius:8,
+            filter:(item)=> item.dataset.label!=='p10' && item.dataset.label!=='p25',
+            callbacks:{ label:(c)=> c.dataset.label+'：'+ fmtMoney(c.raw) }
+          }
         },
         scales:{
-          x:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, maxRotation:60, autoSkip:true, maxTicksLimit:8 }, grid:{ color:'rgba(255,255,255,0.04)' } },
-          y:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, callback:(v)=> fmtMoney(v) }, grid:{ color:'rgba(255,255,255,0.05)' } }
+          x:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, maxRotation:50, autoSkip:true, maxTicksLimit:8 }, grid:{ color:GRID_COLOR } },
+          y:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, callback:(v)=> fmtMoney(v) }, grid:{ color:GRID_COLOR } }
         }
       }
     });
   }
 
   function updateMcHistogram(yearIdx){
-    if(!mcYearlySamplesCache) return;
+    if(!mcYearlySamplesCache || !mcYearlySamplesCache[yearIdx]) return;
     const arr = mcYearlySamplesCache[yearIdx];
     $('mcYearLabel').textContent = '第 '+yearIdx+' 年（'+arr.length+' 條模擬路徑）';
 
-    const min = Math.min(...arr), max = Math.max(...arr);
+    let min=Infinity, max=-Infinity;
+    for(const v of arr){ if(v<min) min=v; if(v>max) max=v; }
     const binCount = 16;
     const binSize = Math.max(1, (max-min)/binCount);
     const bins = new Array(binCount).fill(0);
@@ -1660,43 +1754,92 @@
     if(mcHistChart) mcHistChart.destroy();
     mcHistChart = new Chart(ctx, {
       type:'bar',
-      data:{ labels, datasets:[{ data:bins, backgroundColor:'rgba(79,156,120,0.55)', borderRadius:2, borderWidth:0 }] },
+      data:{ labels, datasets:[{ data:bins, backgroundColor:'rgba(37,99,235,0.55)', hoverBackgroundColor:'rgba(6,182,212,0.85)', borderRadius:3, borderWidth:0 }] },
       options:{
         responsive:true,
         plugins:{
           legend:{ display:false },
-          tooltip:{ callbacks:{ label:(c)=> c.raw+' 條路徑' } }
+          tooltip:{
+            backgroundColor:'rgba(13,23,41,0.92)', bodyFont:{family:'JetBrains Mono',size:11},
+            padding:9, cornerRadius:8, callbacks:{ label:(c)=> c.raw+' 條路徑' }
+          }
         },
         scales:{
-          x:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:9}, maxRotation:60, autoSkip:true, maxTicksLimit:8 }, grid:{ display:false } },
-          y:{ ticks:{ color:'#8993a1', font:{family:'IBM Plex Mono', size:10}, precision:0 }, grid:{ color:'rgba(255,255,255,0.05)' } }
+          x:{ ticks:{ color:AXIS_COLOR, font:{family:'JetBrains Mono', size:9}, maxRotation:50, autoSkip:true, maxTicksLimit:8 }, grid:{ display:false } },
+          y:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, precision:0 }, grid:{ color:GRID_COLOR } }
         }
       }
     });
   }
 
-  /* ================= 綁定事件 ================= */
+  /* ================= 倒數計時（每秒） ================= */
+  let lastSec = null;
+  function tickCountdown(){
+    const cfg = readInputs();
+    const birth = new Date(cfg.birthDate);
+    const targetDate = new Date(birth);
+    targetDate.setFullYear(birth.getFullYear() + cfg.retireAge);
+    const now = new Date();
+
+    let diffMs = targetDate - now;
+    if(diffMs < 0) diffMs = 0;
+
+    const oneDay = 24*3600*1000;
+    const years = Math.floor(diffMs/(365.2425*oneDay));
+    let rest = diffMs - years*365.2425*oneDay;
+    const months = Math.floor(rest/(30.4368*oneDay));
+    rest = rest - months*30.4368*oneDay;
+    const days = Math.floor(rest/oneDay);
+    rest = rest - days*oneDay;
+    const hours = Math.floor(rest/3600000);
+    rest = rest - hours*3600000;
+    const mins = Math.floor(rest/60000);
+    const secs = Math.floor((rest - mins*60000)/1000);
+
+    $('cdYears').textContent = years;
+    $('cdMonths').textContent = months;
+    $('cdDays').textContent = days;
+    $('cdHours').textContent = String(hours).padStart(2,'0');
+    $('cdMins').textContent = String(mins).padStart(2,'0');
+    $('cdSecs').textContent = String(secs).padStart(2,'0');
+    $('cdTotalDays').textContent = Math.floor(diffMs/oneDay).toLocaleString();
+
+    if(secs!==lastSec){
+      lastSec = secs;
+      const el = $('cfSec');
+      el.classList.add('tick');
+      setTimeout(()=> el.classList.remove('tick'), 380);
+    }
+
+    // 儀表盤
+    const start = planStartDate ? new Date(planStartDate) : now;
+    const totalSpanMs = Math.max(1, targetDate - start);
+    const elapsedMs = Math.max(0, now - start);
+    const pctElapsed = Math.max(0, Math.min(100, elapsedMs/totalSpanMs*100));
+    const R = 86, C = 2*Math.PI*R;
+    const dial = $('dialProgress');
+    dial.setAttribute('stroke-dasharray', C.toFixed(1));
+    dial.setAttribute('stroke-dashoffset', (C*(1-pctElapsed/100)).toFixed(1));
+    $('dialPct').textContent = pctElapsed.toFixed(2)+'%';
+  }
+
+  /* ================= 事件綁定 ================= */
   ['birthDate','retireAge','curCash','monthlyDca','annualReturn','firstYearExpense','inflation','usdTwdRate'].forEach(id=>{
-    $(id).addEventListener('input', ()=>{ scheduleSaveConfig(); renderHoldings(); computeAll(); });
+    $(id).addEventListener('input', ()=>{ scheduleSaveConfig(); renderPortfolios(); computeAll(); });
   });
 
-  $('btnAddRow').addEventListener('click', ()=> addHolding());
+  $('btnAddPortfolio').addEventListener('click', addPortfolio);
   $('btnFetch').addEventListener('click', fetchAllPrices);
   $('btnSignIn').addEventListener('click', ()=> window.__signInWithGoogle && window.__signInWithGoogle());
   $('btnSignOut').addEventListener('click', ()=> window.__signOutUser && window.__signOutUser());
-
-  $('btnAddEvent').addEventListener('click', ()=> addEvent());
+  $('btnAddEvent').addEventListener('click', addEvent);
   $('eventsEnabled').addEventListener('change', ()=>{ saveEventsEnabled(); computeAll(); });
   $('btnRunMc').addEventListener('click', ()=> runMonteCarlo());
   $('mcYearSlider').addEventListener('input', (e)=> updateMcHistogram(parseInt(e.target.value,10)));
 
   async function reloadAllDataAndRender(){
     await loadStorage();
-    if(holdings.length===0){
-      addHolding({code:'', shares:0, cost:0});
-    } else {
-      renderHoldings();
-    }
+    renderPortfolios();
     renderEvents();
     computeAll();
   }
@@ -1712,47 +1855,15 @@
   });
 
   (async function init(){
-    if(window.__authReady){ await window.__authReady; } // 等待 Firebase 回報初始登入狀態, 避免先讀本機再被雲端資料覆蓋
+    if(window.__authReady){ await window.__authReady; }
     updateAuthUI(window.__getCurrentUser ? window.__getCurrentUser() : null);
     await loadStorage();
-    if(holdings.length===0){
-      // 首次使用預帶一列範例, 方便使用者理解格式(不預設任何真實股數/成本)
-      addHolding({code:'', shares:0, cost:0});
-    } else {
-      renderHoldings();
-    }
+    renderPortfolios();
     renderEvents();
     computeAll();
-    fetchAllPrices(); // 開啟頁面時自動嘗試抓取一次
+    fetchAllPrices();
 
-    setInterval(()=>{
-      const cfg = readInputs();
-      const birth = new Date(cfg.birthDate);
-      const targetDate = new Date(birth);
-      targetDate.setFullYear(birth.getFullYear() + cfg.retireAge);
-      let diffMs = targetDate - new Date();
-      if(diffMs < 0) diffMs = 0;
-      const oneDay = 24*3600*1000;
-      const years = Math.floor(diffMs/(365.2425*oneDay));
-      const afterYears = diffMs - years*365.2425*oneDay;
-      const months = Math.floor(afterYears/(30.4368*oneDay));
-      const afterMonths = afterYears - months*30.4368*oneDay;
-      const days = Math.floor(afterMonths/oneDay);
-      const hours = Math.floor((afterMonths - days*oneDay)/3600000);
-      $('cdYears').textContent = years;
-      $('cdMonths').textContent = months;
-      $('cdDays').textContent = days;
-      $('cdHours').textContent = hours;
-
-      // 儀表盤也隨時間微幅更新(不用整頁重繪)
-      const start = planStartDate ? new Date(planStartDate) : new Date();
-      const totalSpanMs = Math.max(1, targetDate - start);
-      const elapsedMs = Math.max(0, new Date() - start);
-      const pctElapsed = Math.max(0, Math.min(100, elapsedMs/totalSpanMs*100));
-      const R = 96, C = 2*Math.PI*R;
-      $('dialProgress').setAttribute('stroke-dashoffset', (C*(1-pctElapsed/100)).toFixed(1));
-      $('dialPct').textContent = pctElapsed.toFixed(1)+'%';
-    }, 1000);
+    setInterval(tickCountdown, 1000);
   })();
 })();
 </script>

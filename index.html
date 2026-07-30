@@ -410,13 +410,16 @@
     margin-top:18px;padding:16px;border-radius:12px;
     background:linear-gradient(135deg,var(--surface-2),rgba(6,182,212,0.05));
     border:1px solid var(--line);
-    display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
   }
-  @media (max-width:620px){ .event-impact{grid-template-columns:1fr;gap:12px;} }
+  @media (max-width:900px){ .event-impact{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:520px){ .event-impact{grid-template-columns:1fr;gap:12px;} }
   .event-impact .imp-item{font-family:var(--mono);font-size:10px;color:var(--text-faint);letter-spacing:0.05em;text-transform:uppercase;}
-  .event-impact .imp-item b{display:block;font-family:var(--display);font-size:20px;margin-top:5px;font-weight:700;letter-spacing:-0.02em;text-transform:none;}
+  .event-impact .imp-item b{display:block;font-family:var(--display);font-size:19px;margin-top:5px;font-weight:700;letter-spacing:-0.02em;text-transform:none;line-height:1.25;}
   .event-impact .imp-item b.neg{color:var(--neg);} .event-impact .imp-item b.pos{color:var(--pos);}
+  .event-impact .imp-item b .sub{display:block;font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--text-faint);margin-top:3px;letter-spacing:0;}
   .ev-hint{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);margin-top:12px;line-height:1.7;}
+  .ev-hint b{color:var(--text-dim);font-weight:600;}
 
   /* ---------- metrics ---------- */
   .metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
@@ -754,8 +757,9 @@
         <div class="imp-item">退休當日資產影響<b id="impactAsset">—</b></div>
         <div class="imp-item">退休提領率影響<b id="impactSwr">—</b></div>
         <div class="imp-item">事件總支出<b id="impactTotal">—</b></div>
+        <div class="imp-item">月薪吸收 / 投組扣除<b id="impactBreakdown">—</b></div>
       </div>
-      <div class="ev-hint">＊ 一次性支出於「起始年月」當月扣除；每月還款自起始年月起連續扣除指定期數（期數留空＝持續到退休）。</div>
+      <div class="ev-hint" id="evHint">＊ 累積期間（退休前）事件優先由月薪吸收：<b>事件 ≤ 生活支出預算</b>時完全不影響 DCA 與投組；月薪仍能負擔時 DCA 被壓縮；月薪不足時才會動用投組。退休後（無薪水）事件直接由投組扣除。</div>
     </div>
   </div>
 
@@ -1444,6 +1448,54 @@
     return lifeEvents.some(ev => (parseFloat(ev.oneTime)||0)>0 || (parseFloat(ev.monthly)||0)>0);
   }
 
+  // 依「累積期由月薪優先吸收」邏輯，逐月計算實際的 DCA 投入與投組扣除金額
+  // 分三種情況（單月）：
+  //  A) 事件 <= 生活支出預算(income - DCA): 完全由薪水吸收, DCA 不變, 投組不動
+  //  B) 事件 > 生活預算 但 <= 月薪: DCA 被壓縮以支付超額部分, 投組仍不動
+  //  C) 事件 > 月薪: DCA 歸零, 差額從投組扣
+  // 若未輸入月薪(income<=0), 沿用原邏輯: DCA 持續, 事件全額由投組扣。
+  function computeEffectiveMonthlyFlows(cfg, totalAccumMonths, applyEvents){
+    const rawFlows = computeEventCashflows(totalAccumMonths, applyEvents);
+    const income = Math.max(0, cfg.monthlyIncome||0);
+    const intendedDca = Math.max(0, cfg.monthlyDca||0);
+    const flows = [];
+    let salaryAbsorbed = 0, portfolioDrawn = 0, dcaLost = 0;
+    const totalEvent = rawFlows.reduce((a,b)=>a+b, 0);
+
+    if(income<=0){
+      for(let i=0; i<totalAccumMonths; i++){
+        const event = rawFlows[i] || 0;
+        flows.push({ dcaIn: intendedDca, portfolioOut: event });
+        portfolioDrawn += event;
+      }
+      return { flows, stats: { totalEvent, salaryAbsorbed, portfolioDrawn, dcaLost } };
+    }
+
+    const livingBudget = Math.max(0, income - intendedDca);
+    for(let i=0; i<totalAccumMonths; i++){
+      const event = rawFlows[i] || 0;
+      let dcaIn = intendedDca, portfolioOut = 0;
+      if(event<=0){
+        // 無事件月, 直接照常投入
+      } else if(event <= livingBudget){
+        salaryAbsorbed += event;
+      } else if(event <= income){
+        const excess = event - livingBudget;
+        dcaIn = Math.max(0, intendedDca - excess);
+        salaryAbsorbed += event;
+        dcaLost += (intendedDca - dcaIn);
+      } else {
+        dcaIn = 0;
+        portfolioOut = event - income;
+        salaryAbsorbed += income;
+        portfolioDrawn += portfolioOut;
+        dcaLost += intendedDca;
+      }
+      flows.push({ dcaIn, portfolioOut });
+    }
+    return { flows, stats: { totalEvent, salaryAbsorbed, portfolioDrawn, dcaLost } };
+  }
+
   /* ================= 股價抓取 ================= */
   const CORS_PROXIES = [
     url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
@@ -1611,14 +1663,15 @@
 
   function buildPlanPath(cfg, curStock, totalYears, curAgeFloor, withEvents){
     const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
-    const flows = computeEventCashflows(totalYears*12, withEvents);
+    const { flows } = computeEffectiveMonthlyFlows(cfg, totalYears*12, withEvents);
     let bal = curStock;
     const plan = [{ yearIdx:0, age: curAgeFloor, balance: curStock + cfg.curCash }];
     let mIdx = 0;
     for(let y=1; y<=totalYears; y++){
       for(let i=0;i<12;i++){
-        bal += cfg.monthlyDca;
-        bal -= (flows[mIdx]||0);
+        const eff = flows[mIdx] || { dcaIn: cfg.monthlyDca, portfolioOut: 0 };
+        bal += eff.dcaIn;
+        bal -= eff.portfolioOut;
         if(bal<0) bal = 0;
         bal *= (1+monthlyRate);
         mIdx++;
@@ -1704,6 +1757,7 @@
 
     // 人生事件影響
     const impactEl = $('eventImpact');
+    let eventStats = null;
     if(eventsHaveContent()){
       const finalWith = buildPlanPath(cfg, curStock, totalYears, curAgeFloor, true);
       const fW = finalWith[finalWith.length-1].balance;
@@ -1712,8 +1766,8 @@
       const swrW = fW>0 ? expenseAtRetirement/fW*100 : 0;
       const swrN = fN>0 ? expenseAtRetirement/fN*100 : 0;
       const deltaSwr = swrW - swrN;
-      const flows = computeEventCashflows(totalYears*12, true);
-      const totalSpent = flows.reduce((s,v)=>s+v, 0);
+      const eff = computeEffectiveMonthlyFlows(cfg, totalYears*12, true);
+      eventStats = eff.stats;
 
       const a = $('impactAsset');
       a.textContent = (deltaAsset>=0?'+':'') + fmtMoney(deltaAsset);
@@ -1721,7 +1775,22 @@
       const b = $('impactSwr');
       b.textContent = (deltaSwr>=0?'+':'') + deltaSwr.toFixed(2) + ' pp';
       b.className = deltaSwr>0 ? 'neg' : 'pos';
-      $('impactTotal').textContent = fmtMoney(totalSpent);
+      $('impactTotal').textContent = fmtMoney(eventStats.totalEvent);
+
+      const breakdownEl = $('impactBreakdown');
+      if(cfg.monthlyIncome>0){
+        const absorbPct = eventStats.totalEvent>0 ? (eventStats.salaryAbsorbed/eventStats.totalEvent*100) : 100;
+        const drawnFromPortfolio = eventStats.portfolioDrawn;
+        const tone = drawnFromPortfolio<=0 ? 'pos' : (absorbPct>=50 ? '' : 'neg');
+        breakdownEl.className = tone;
+        breakdownEl.innerHTML = `${fmtMoney(eventStats.salaryAbsorbed)} <span class="sub">薪水吸收 ${absorbPct.toFixed(0)}%</span>`
+          + (drawnFromPortfolio>0
+              ? `<span class="sub" style="color:var(--neg);">投組扣除 ${fmtMoney(drawnFromPortfolio)}</span>`
+              : `<span class="sub" style="color:var(--pos);">投組完全不受影響</span>`);
+      } else {
+        breakdownEl.className = 'neg';
+        breakdownEl.innerHTML = `<span class="sub">未輸入月薪 · 事件全額由投組扣</span>`;
+      }
       impactEl.style.display = 'grid';
     } else {
       impactEl.style.display = 'none';
@@ -1737,6 +1806,7 @@
       planWithFinal: planWith[planWith.length-1].balance,
       planNoEventsFinal: planNoEvents[planNoEvents.length-1].balance,
       hasEvents: eventsHaveContent(),
+      eventStats,
       firstYearExpense: cfg.firstYearExpense,
       monthlyDca: cfg.monthlyDca,
       monthlyIncome: cfg.monthlyIncome,
@@ -1987,13 +2057,24 @@
     }
 
     // 人生事件影響
-    if(s.hasEvents){
+    if(s.hasEvents && s.eventStats){
+      const es = s.eventStats;
       const eventDelta = s.planNoEventsFinal - s.planWithFinal;
       const eventPct = s.planNoEventsFinal>0 ? (eventDelta/s.planNoEventsFinal*100) : 0;
-      if(eventPct>15){
-        watch.push(`人生事件使退休當日資產減少 <b>${eventPct.toFixed(1)}%</b>（約 ${fmtMoney(eventDelta)}），若非必要可考慮延後或縮減規模。`);
-      } else if(eventPct>5){
-        watch.push(`人生事件使退休當日資產減少 <b>${eventPct.toFixed(1)}%</b>（約 ${fmtMoney(eventDelta)}），影響尚在可控範圍。`);
+      const absorbPct = es.totalEvent>0 ? (es.salaryAbsorbed/es.totalEvent*100) : 0;
+
+      if(s.monthlyIncome>0 && es.portfolioDrawn<=0 && es.dcaLost<=0){
+        action.push(`人生事件總支出 <b>${fmtMoney(es.totalEvent)}</b> 完全由月薪 <b>${fmtMoney(s.monthlyIncome)}</b> 吸收，DCA 與投組完全不受影響，退休計畫不受衝擊。`);
+      } else if(s.monthlyIncome>0 && es.portfolioDrawn<=0 && es.dcaLost>0){
+        watch.push(`人生事件雖由月薪吸收（${absorbPct.toFixed(0)}%），但因單月支出超過生活預算，累積期間 DCA 被壓縮共 <b>${fmtMoney(es.dcaLost)}</b>，導致退休資產減少 <b>${eventPct.toFixed(1)}%</b>。`);
+      } else if(s.monthlyIncome>0 && es.portfolioDrawn>0){
+        watch.push(`部分事件超出月薪負擔（薪水吸收 ${absorbPct.toFixed(0)}%），需從投組扣除 <b>${fmtMoney(es.portfolioDrawn)}</b>；再加上被壓縮的 DCA <b>${fmtMoney(es.dcaLost)}</b>，退休當日資產減少 <b>${eventPct.toFixed(1)}%</b>。可考慮調降規模或延後時程。`);
+      } else if(s.monthlyIncome<=0){
+        if(eventPct>15){
+          watch.push(`人生事件使退休當日資產減少 <b>${eventPct.toFixed(1)}%</b>（約 ${fmtMoney(eventDelta)}）。輸入月薪後可看看是否可由薪水吸收，減輕對退休的衝擊。`);
+        } else if(eventPct>5){
+          watch.push(`人生事件使退休當日資產減少 <b>${eventPct.toFixed(1)}%</b>（約 ${fmtMoney(eventDelta)}），影響尚在可控範圍。`);
+        }
       }
     }
 
@@ -2150,7 +2231,7 @@
     if(runs>10000) runs = 10000;
     $('mcRuns').value = runs;
     const applyEvents = $('eventsEnabled').checked;
-    const eventFlows = computeEventCashflows(totalYears*12, applyEvents);
+    const { flows: effFlows } = computeEffectiveMonthlyFlows(cfg, totalYears*12, applyEvents);
     const monthlyInflation = Math.pow(1+cfg.inflation, 1/12) - 1;
     // 退休當日「當年幣值」的年生活費（inflation-adjusted）
     const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
@@ -2185,8 +2266,9 @@
           for(let y=1; y<=totalYears; y++){
             for(let i=0;i<12;i++){
               const r = monthlyRate + boxMullerRandom()*monthlyVol;
-              bal += cfg.monthlyDca;
-              bal -= (eventFlows[mIdx]||0);
+              const eff = effFlows[mIdx] || { dcaIn: cfg.monthlyDca, portfolioOut: 0 };
+              bal += eff.dcaIn;
+              bal -= eff.portfolioOut;
               if(bal<0) bal = 0;
               bal *= (1+r);
               mIdx++;

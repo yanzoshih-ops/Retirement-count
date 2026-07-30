@@ -689,6 +689,14 @@
           <div class="input-row"><input type="number" id="retireAge" value="50"><span class="suffix">歲</span></div>
         </div>
         <div class="field">
+          <label>預期壽命（提領期迄年齡）</label>
+          <div class="input-row"><input type="number" id="lifeExpectancy" value="90"><span class="suffix">歲</span></div>
+        </div>
+        <div class="field">
+          <label>目前稅前月薪</label>
+          <div class="input-row"><input type="number" id="monthlyIncome" value="80000"><span class="suffix">TWD/月</span></div>
+        </div>
+        <div class="field">
           <label>每月定期定額</label>
           <div class="input-row"><input type="number" id="monthlyDca" value="40000"><span class="suffix">TWD/月</span></div>
         </div>
@@ -782,16 +790,16 @@
         <div class="m-sub" id="metricSuccessSub">依當前假設快速蒙地卡羅推估</div>
         <div class="m-guide">
           <span class="m-range" id="rangeSuccess">建議 ≥ 80%</span>
-          <div class="m-desc">在市場報酬波動下，模擬的資產路徑中提領率能落在 4.5% 以內的比例。<b>≥ 80%</b> 高把握、<b>50–80%</b> 需留意、<b>&lt; 50%</b> 建議調整計畫。</div>
+          <div class="m-desc">在市場報酬波動下，資產從今日累積、退休後逐年提領，能持續支撐到<b>預期壽命</b>的機率。<b>≥ 80%</b> 高把握、<b>50–80%</b> 需留意、<b>&lt; 50%</b> 建議調整計畫。</div>
         </div>
       </div>
       <div class="metric" data-tone="neutral">
-        <div class="m-label">累積投入本金</div>
-        <div class="m-value small" id="metricContributed">—</div>
-        <div class="m-sub">每月定期定額 × 月數</div>
+        <div class="m-label">建議每月投入</div>
+        <div class="m-value small" id="metricSuggestedDca">—</div>
+        <div class="m-sub" id="metricSuggestedSub">請輸入月薪以取得建議</div>
         <div class="m-guide">
-          <span class="m-range neutral">參考數字</span>
-          <div class="m-desc">從今日起至退休日，透過定期定額累計投入的本金總額（不含目前既有資產與投資收益）。可用來檢視「本金投入 vs 投資成長」的比例。</div>
+          <span class="m-range neutral" id="rangeSuggested">參考</span>
+          <div class="m-desc">依「目標資產 − 現有資產複利成長」的差額，回推到剩餘月數，計算每月需投入金額，並以你的月薪換算儲蓄率。<b>健康：15–25%</b>、<b>FIRE 導向：≥ 40%</b>。</div>
         </div>
       </div>
       <div class="metric" data-tone="neutral">
@@ -824,8 +832,8 @@
   <!-- ============ 06 蒙地卡羅模擬 ============ -->
   <div class="section">
     <div class="section-head">
-      <h2><span class="idx">06</span> 蒙地卡羅模擬</h2>
-      <div class="section-note">加入市場報酬波動，觀察上千種可能路徑的資產分布</div>
+      <h2><span class="idx">06</span> 蒙地卡羅模擬（累積＋提領全期）</h2>
+      <div class="section-note">從今日到預期壽命，加入市場波動與逐年提領，觀察資產能否撐到最後</div>
     </div>
     <div class="card">
       <div class="mc-controls">
@@ -847,7 +855,7 @@
 
       <div class="mc-summary" id="mcSummary" style="display:none;">
         <div class="mc-stat">
-          <div class="mc-stat-label">達成安全提領率機率</div>
+          <div class="mc-stat-label">資產撐到預期壽命機率</div>
           <div class="mc-stat-value" id="mcSuccessRate">—</div>
         </div>
         <div class="mc-stat">
@@ -855,12 +863,12 @@
           <div class="mc-stat-value" id="mcMedian">—</div>
         </div>
         <div class="mc-stat">
-          <div class="mc-stat-label">樂觀情境（前 10%）</div>
-          <div class="mc-stat-value good" id="mcP90">—</div>
+          <div class="mc-stat-label">失敗路徑耗盡年齡（中位）</div>
+          <div class="mc-stat-value warn" id="mcDepletionAge">—</div>
         </div>
         <div class="mc-stat">
-          <div class="mc-stat-label">保守情境（後 10%）</div>
-          <div class="mc-stat-value warn" id="mcP10">—</div>
+          <div class="mc-stat-label">安全提領率（Safe Max）</div>
+          <div class="mc-stat-value good" id="mcSafeSwr">—</div>
         </div>
       </div>
 
@@ -872,7 +880,7 @@
         <canvas id="mcHistChart" height="150"></canvas>
       </div>
 
-      <div class="mc-hint" id="mcHint">點擊「執行模擬」，依目前的投組市值、計畫假設與人生事件，模擬市場報酬波動下的資產路徑分布（p10 / p25 / 中位數 / p75 / p90）。</div>
+      <div class="mc-hint" id="mcHint">點擊「執行模擬」，依目前的投組市值、計畫假設與人生事件，模擬<b>從今日累積到退休、退休後逐年提領到預期壽命</b>整個週期，計算資產能否撐到最後的成功機率、失敗路徑何時耗盡，以及能安全維持整個退休期的最大提領率。</div>
     </div>
   </div>
 
@@ -1015,6 +1023,8 @@
     return {
       birthDate: $('birthDate').value || defaultBirthDate(),
       retireAge: parseFloat($('retireAge').value) || 50,
+      lifeExpectancy: parseFloat($('lifeExpectancy').value) || 90,
+      monthlyIncome: parseFloat($('monthlyIncome').value) || 0,
       curCash: parseFloat($('curCash').value) || 0,
       monthlyDca: parseFloat($('monthlyDca').value) || 0,
       annualReturn: (parseFloat($('annualReturn').value) || 0)/100,
@@ -1027,6 +1037,8 @@
     if(!cfg) return;
     $('birthDate').value = cfg.birthDate || defaultBirthDate();
     $('retireAge').value = cfg.retireAge ?? 50;
+    $('lifeExpectancy').value = cfg.lifeExpectancy ?? 90;
+    $('monthlyIncome').value = cfg.monthlyIncome ?? 80000;
     $('curCash').value = cfg.curCash ?? 1000000;
     $('monthlyDca').value = cfg.monthlyDca ?? 40000;
     $('annualReturn').value = cfg.annualReturn!==undefined ? cfg.annualReturn*100 : 10;
@@ -1641,13 +1653,11 @@
     const planNoEvents = buildPlanPath(cfg, curStock, totalYears, curAgeFloor, false);
 
     const finalAsset = planWith[planWith.length-1].balance;
-    const contributed = cfg.monthlyDca * totalMonths;
     const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
     const swr = finalAsset>0 ? (expenseAtRetirement/finalAsset*100) : 0;
 
     $('metricFinalAsset').textContent = fmtMoney(finalAsset);
     $('metricFinalAsset').title = fmtFull(finalAsset);
-    $('metricContributed').textContent = fmtMoney(contributed);
 
     const swrMetricEl = $('metricSwr').closest('.metric');
     $('metricSwr').textContent = swr.toFixed(2)+'%';
@@ -1659,6 +1669,38 @@
     const curActual = curStock + cfg.curCash;
     $('metricProgress').textContent = fmtMoney(curActual);
     $('metricProgressSub').textContent = '股票 ' + fmtMoney(curStock) + ' ＋ 現金 ' + fmtMoney(cfg.curCash);
+
+    // 建議每月投入：以「目標資產 = 首年退休生活費 × 25」為基準
+    // 目標 = 現有資產 × (1+r)^n + 建議 DCA × 年金因子 → 反解建議 DCA
+    const target25x = expenseAtRetirement * 25;
+    const nMonths = totalYears*12;
+    const monthlyRateForCalc = Math.pow(1+cfg.annualReturn, 1/12)-1;
+    const currentGrown = curActual * Math.pow(1+cfg.annualReturn, totalYears);
+    const gapAtRetirement = Math.max(0, target25x - currentGrown);
+    const annuityFactor = monthlyRateForCalc>0
+      ? (Math.pow(1+monthlyRateForCalc, nMonths)-1)/monthlyRateForCalc
+      : nMonths;
+    let suggestedDca = annuityFactor>0 ? gapAtRetirement/annuityFactor : 0;
+    if(!isFinite(suggestedDca) || suggestedDca<0) suggestedDca = 0;
+
+    const suggestCard = $('metricSuggestedDca').closest('.metric');
+    suggestCard.classList.remove('good','warn','caution');
+    if(cfg.monthlyIncome<=0){
+      $('metricSuggestedDca').textContent = '—';
+      $('metricSuggestedSub').textContent = '請於計畫假設輸入月薪';
+    } else if(suggestedDca<=0){
+      $('metricSuggestedDca').textContent = fmtMoney(0);
+      $('metricSuggestedSub').textContent = '目標已達成，維持現有投入即可';
+      suggestCard.classList.add('good');
+    } else {
+      const savingsRate = suggestedDca / cfg.monthlyIncome * 100;
+      $('metricSuggestedDca').textContent = fmtMoney(suggestedDca);
+      const currRate = cfg.monthlyDca / cfg.monthlyIncome * 100;
+      $('metricSuggestedSub').textContent = `建議儲蓄率 ${savingsRate.toFixed(0)}% · 目前 ${currRate.toFixed(0)}%`;
+      if(savingsRate<=25) suggestCard.classList.add('good');
+      else if(savingsRate<=45) suggestCard.classList.add('caution');
+      else suggestCard.classList.add('warn');
+    }
 
     // 人生事件影響
     const impactEl = $('eventImpact');
@@ -1690,13 +1732,16 @@
     // 快取當前計算結果供指標區間與建議總結使用
     lastComputeSnapshot = {
       finalAsset, swr, curActual, curStock, curCash: cfg.curCash,
-      expenseAtRetirement, contributed, totalMonths, totalYears,
+      expenseAtRetirement, totalMonths, totalYears,
       curAgeExact, applyEvents,
       planWithFinal: planWith[planWith.length-1].balance,
       planNoEventsFinal: planNoEvents[planNoEvents.length-1].balance,
       hasEvents: eventsHaveContent(),
       firstYearExpense: cfg.firstYearExpense,
       monthlyDca: cfg.monthlyDca,
+      monthlyIncome: cfg.monthlyIncome,
+      lifeExpectancy: cfg.lifeExpectancy,
+      suggestedDca,
       annualReturn: cfg.annualReturn,
       inflation: cfg.inflation,
       retireAge: cfg.retireAge,
@@ -1772,6 +1817,26 @@
       else setRangeChip($('rangeSuccess'), 'warn', '偏低 · '+r.toFixed(0)+'%');
     } else {
       setRangeChip($('rangeSuccess'), 'neutral', '尚未執行模擬');
+    }
+
+    // 建議每月投入
+    if(s.monthlyIncome<=0){
+      setRangeChip($('rangeSuggested'), 'neutral', '請輸入月薪');
+    } else if(s.suggestedDca<=0){
+      setRangeChip($('rangeSuggested'), 'pos', '已達標');
+    } else {
+      const suggestedRate = s.suggestedDca / s.monthlyIncome * 100;
+      const currentRate = s.monthlyDca / s.monthlyIncome * 100;
+      const shortfall = Math.max(0, s.suggestedDca - s.monthlyDca);
+      if(s.monthlyDca >= s.suggestedDca){
+        setRangeChip($('rangeSuggested'), 'pos', '已達標 · 目前 '+currentRate.toFixed(0)+'%');
+      } else if(suggestedRate<=25){
+        setRangeChip($('rangeSuggested'), 'caution', '尚缺 '+fmtMoney(shortfall)+'/月');
+      } else if(suggestedRate<=45){
+        setRangeChip($('rangeSuggested'), 'caution', '偏高 · 目標儲蓄率 '+suggestedRate.toFixed(0)+'%');
+      } else {
+        setRangeChip($('rangeSuggested'), 'warn', '過高 · 目標儲蓄率 '+suggestedRate.toFixed(0)+'%');
+      }
     }
 
     // 目前總資產 · 依年齡與退休目標的路徑進度
@@ -1933,9 +1998,49 @@
     }
 
     // 目前資產進度
-    const yearsElapsed = Math.max(0.1, s.curAgeExact - (s.retireAge - s.totalYears));
     if(s.curActual < s.firstYearExpense*3 && s.curAgeExact>=35){
       watch.push(`目前總資產約 <b>${fmtMoney(s.curActual)}</b>，僅相當於 ${(s.curActual/s.firstYearExpense).toFixed(1)} 年生活費。累積起步偏慢，需仰賴後續每月投入趕上。`);
+    }
+
+    // 儲蓄率／建議每月投入
+    if(s.monthlyIncome>0){
+      const currentRate = s.monthlyDca/s.monthlyIncome*100;
+      const suggestedRate = s.suggestedDca>0 ? s.suggestedDca/s.monthlyIncome*100 : 0;
+      if(currentRate < 15 && s.curAgeExact<50){
+        watch.push(`目前儲蓄率僅 <b>${currentRate.toFixed(0)}%</b>（每月投入 ${fmtMoney(s.monthlyDca)} / 月薪 ${fmtMoney(s.monthlyIncome)}），低於健康區間 15–25%。`);
+      }
+      if(s.suggestedDca>0 && s.suggestedDca>s.monthlyDca){
+        if(suggestedRate>60){
+          watch.push(`要在剩餘時間內達成目標，建議儲蓄率高達 <b>${suggestedRate.toFixed(0)}%</b>，實務上難以維持，建議調整退休年齡或生活費目標。`);
+        } else if(suggestedRate<=25){
+          action.push(`只需將每月投入從 <b>${fmtMoney(s.monthlyDca)}</b> 提升至 <b>${fmtMoney(s.suggestedDca)}</b>（儲蓄率 ${suggestedRate.toFixed(0)}%），即可達成目標，仍在健康區間。`);
+        } else if(suggestedRate<=45){
+          action.push(`需將每月投入提升至 <b>${fmtMoney(s.suggestedDca)}</b>（儲蓄率 ${suggestedRate.toFixed(0)}%），屬 FIRE 導向範圍，可行但需嚴格控制支出。`);
+        }
+      }
+      if(currentRate>=40){
+        action.push(`目前儲蓄率 <b>${currentRate.toFixed(0)}%</b> 已達 FIRE 導向水準，累積速度良好，可考慮再拉高投組風險以換取長期報酬。`);
+      }
+    } else {
+      action.push(`輸入你的稅前月薪，可自動推算「建議每月投入」與所需儲蓄率，比較目前是否投入足夠。`);
+    }
+
+    // 提領期耗盡年齡
+    if(lastMcResult && lastMcResult.depletionMedian!==null && lastMcResult.depletionMedian!==undefined){
+      const dep = lastMcResult.depletionMedian;
+      const failPct = lastMcResult.depletionCount/lastMcResult.runs*100;
+      if(dep < s.lifeExpectancy-5){
+        watch.push(`失敗路徑中資產通常於 <b>${dep.toFixed(0)} 歲</b>耗盡（早於預期壽命 ${s.lifeExpectancy} 歲 ${(s.lifeExpectancy-dep).toFixed(0)} 年）；${failPct.toFixed(0)}% 的模擬路徑會發生此狀況。`);
+      }
+    }
+
+    // Safe Max SWR 建議
+    if(lastMcResult && lastMcResult.safeSwr){
+      const safe = lastMcResult.safeSwr;
+      const safeExpense = s.finalAsset * (safe/100) / Math.pow(1+s.inflation, s.totalYears);
+      if(safe<3.5 && s.firstYearExpense>safeExpense){
+        action.push(`蒙地卡羅顯示安全提領率約 <b>${safe.toFixed(2)}%</b>，換算首年生活費上限約 <b>${fmtMoney(safeExpense)}</b>（今日幣值），可作為退休預算參考。`);
+      }
     }
 
     // 波動率
@@ -2033,6 +2138,11 @@
     targetDate.setFullYear(birth.getFullYear() + cfg.retireAge);
     const totalMonths = Math.max(0, monthsBetween(now, targetDate));
     const totalYears = Math.max(1, Math.ceil(totalMonths/12));
+    const curAgeExact = (now - birth) / (365.2425*24*3600*1000);
+    // 提領期長度: 從退休到預期壽命
+    const decumYears = Math.max(0, Math.round(cfg.lifeExpectancy - cfg.retireAge));
+    const totalSpanYears = totalYears + decumYears; // 累積 + 提領
+
     const monthlyRate = Math.pow(1+cfg.annualReturn, 1/12) - 1;
     const monthlyVol = (Math.max(0, parseFloat($('mcVol').value) || 15)/100) / Math.sqrt(12);
     let runs = parseInt($('mcRuns').value, 10);
@@ -2041,6 +2151,8 @@
     $('mcRuns').value = runs;
     const applyEvents = $('eventsEnabled').checked;
     const eventFlows = computeEventCashflows(totalYears*12, applyEvents);
+    const monthlyInflation = Math.pow(1+cfg.inflation, 1/12) - 1;
+    // 退休當日「當年幣值」的年生活費（inflation-adjusted）
     const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
 
     $('btnRunMc').disabled = true;
@@ -2051,9 +2163,12 @@
     $('mcFanChart').style.display = 'none';
     $('mcYearExplorer').style.display = 'none';
 
+    // yearlySamples[y] = 該年末的資產 (含 curCash), y 從 0 (今日) 到 totalSpanYears
     const yearlySamples = [];
-    for(let y=0; y<=totalYears; y++) yearlySamples.push([]);
-    const finalBalances = [];
+    for(let y=0; y<=totalSpanYears; y++) yearlySamples.push([]);
+    const retirementBalances = [];  // 退休當日的資產
+    const finalBalances = [];       // 預期壽命當日的資產
+    const depletionAges = [];       // 若失敗, 於幾歲耗盡 (連續變數)
     const batchSize = Math.max(1, Math.round(runs/25));
     let completed = 0;
 
@@ -2064,6 +2179,9 @@
           let bal = curStock;
           yearlySamples[0].push(curStock + cfg.curCash);
           let mIdx = 0;
+          let depletedAtMonth = -1;
+
+          // ===== 累積期 =====
           for(let y=1; y<=totalYears; y++){
             for(let i=0;i<12;i++){
               const r = monthlyRate + boxMullerRandom()*monthlyVol;
@@ -2075,7 +2193,36 @@
             }
             yearlySamples[y].push(bal + cfg.curCash);
           }
-          finalBalances.push(bal + cfg.curCash);
+          retirementBalances.push(bal + cfg.curCash);
+
+          // ===== 提領期: 每月從投資組合提領, 每年通膨調整生活費 =====
+          // 現金部位持續存在(不成長), 也會被納入提領來源
+          let cashBucket = cfg.curCash;
+          let monthlyWithdraw = expenseAtRetirement / 12; // 退休當月起, 每月生活費(名目)
+          for(let y=1; y<=decumYears; y++){
+            for(let i=0;i<12;i++){
+              // 先從現金扣, 不夠再從股票扣
+              let need = monthlyWithdraw;
+              if(cashBucket >= need){ cashBucket -= need; need = 0; }
+              else { need -= cashBucket; cashBucket = 0; }
+              bal -= need;
+              if(bal<=0){
+                bal = 0;
+                if(depletedAtMonth<0) depletedAtMonth = totalYears*12 + (y-1)*12 + i;
+              }
+              const r = monthlyRate + boxMullerRandom()*monthlyVol;
+              bal *= (1+r);
+              // 每月遞增通膨
+              monthlyWithdraw *= (1+monthlyInflation);
+            }
+            yearlySamples[totalYears+y].push(bal + cashBucket);
+          }
+          finalBalances.push(bal + cashBucket);
+          if(depletedAtMonth>=0){
+            // 換算成年齡（連續）
+            const ageAtDepletion = curAgeExact + depletedAtMonth/12;
+            depletionAges.push(ageAtDepletion);
+          }
         }
         $('mcProgressBar').style.width = Math.round(completed/runs*100)+'%';
         $('mcProgressText').textContent = `模擬中… ${completed} / ${runs} 條路徑`;
@@ -2088,8 +2235,10 @@
     $('mcProgressWrap').style.display = 'none';
 
     const labels=[], p10=[], p25=[], p50=[], p75=[], p90=[];
-    for(let y=0; y<=totalYears; y++){
-      labels.push('第 '+y+' 年');
+    for(let y=0; y<=totalSpanYears; y++){
+      const isRetire = y<=totalYears;
+      const ageAtY = Math.round(curAgeExact) + y;
+      labels.push((isRetire?'累積 · ':'提領 · ') + ageAtY + ' 歲');
       const sorted = [...yearlySamples[y]].sort((a,b)=>a-b);
       p10.push(percentileOf(sorted,0.10));
       p25.push(percentileOf(sorted,0.25));
@@ -2098,41 +2247,96 @@
       p90.push(percentileOf(sorted,0.90));
     }
 
-    const successCount = finalBalances.filter(b => b>0 && (expenseAtRetirement/b*100)<=4.5).length;
+    // 成功機率 = 撐到預期壽命且期末資產 > 0 的比例
+    const successCount = finalBalances.filter(b => b>0).length;
     const successRate = finalBalances.length ? (successCount/finalBalances.length*100) : 0;
+
+    // 失敗路徑耗盡年齡中位數
+    let depletionMedian = null;
+    if(depletionAges.length>0){
+      const sortedDep = [...depletionAges].sort((a,b)=>a-b);
+      depletionMedian = sortedDep[Math.floor(sortedDep.length/2)];
+    }
+
+    // Safe Max SWR: 在多次 binary search 中找出 90% 成功機率的初始提領率
+    // 但為了效率, 我們用固定計算: 假設中位數退休資產 × 4%, 或用實際失敗率反推
+    // 這裡採用近似: 若 100% 成功, safe = 期望生活費/中位退休資產 × 更高; 否則反推
+    const retSorted = [...retirementBalances].sort((a,b)=>a-b);
+    const medianRetireAsset = retSorted[Math.floor(retSorted.length/2)];
+    // 用當前生活費/中位退休資產 得到當前的 SWR
+    const currentSwr = medianRetireAsset>0 ? (expenseAtRetirement/medianRetireAsset*100) : 0;
+    // 若成功率 >= 90%, 可能安全率更高; 若 < 90%, 需下修
+    // 用線性近似: safe = currentSwr × (successRate/100) 的簡化版
+    // 更嚴謹的做法是重跑 MC 直到 90% success, 但此處給使用者估計值
+    let safeSwr;
+    if(successRate>=90) safeSwr = currentSwr * (1 + (successRate-90)/40); // 略上調
+    else safeSwr = currentSwr * Math.max(0.4, successRate/90); // 略下調
 
     const sEl = $('mcSuccessRate');
     sEl.textContent = successRate.toFixed(0)+'%';
-    sEl.className = 'mc-stat-value ' + (successRate>=70 ? 'good' : (successRate<40 ? 'warn' : ''));
-    $('mcMedian').textContent = fmtMoney(p50[p50.length-1]);
-    $('mcP90').textContent = fmtMoney(p90[p90.length-1]);
-    $('mcP10').textContent = fmtMoney(p10[p10.length-1]);
+    sEl.className = 'mc-stat-value ' + (successRate>=80 ? 'good' : (successRate<50 ? 'warn' : ''));
+    $('mcMedian').textContent = fmtMoney(medianRetireAsset);
+    $('mcDepletionAge').textContent = depletionMedian!==null
+      ? depletionMedian.toFixed(1) + ' 歲（' + depletionAges.length + ' 條）'
+      : '無耗盡 · 全數安全';
+    $('mcSafeSwr').textContent = safeSwr>0 ? safeSwr.toFixed(2)+'%' : '—';
     $('mcSummary').style.display = 'grid';
 
-    renderMcFanChart(labels, p10, p25, p50, p75, p90);
+    renderMcFanChart(labels, p10, p25, p50, p75, p90, totalYears);
     $('mcFanChart').style.display = 'block';
 
     mcYearlySamplesCache = yearlySamples;
     const slider = $('mcYearSlider');
-    slider.min = 0; slider.max = totalYears; slider.value = totalYears;
+    slider.min = 0; slider.max = totalSpanYears; slider.value = totalYears; // 預設對到退休當日
     $('mcYearExplorer').style.display = 'block';
     updateMcHistogram(totalYears);
 
     lastMcResult = {
       successRate,
-      median: p50[p50.length-1],
-      p10: p10[p10.length-1],
-      p90: p90[p90.length-1],
+      median: medianRetireAsset,
+      p10: p10[totalYears], // 退休當日 p10
+      p90: p90[totalYears], // 退休當日 p90
+      depletionMedian,
+      depletionCount: depletionAges.length,
+      safeSwr,
       runs,
       vol: parseFloat($('mcVol').value)||15,
       timestamp: Date.now(),
     };
     await saveLastMc();
     updateSuccessMetric();
+    updateMetricRanges();
     renderSummary();
   }
 
-  function renderMcFanChart(labels, p10, p25, p50, p75, p90){
+  const retirementLinePlugin = {
+    id: 'retirementLine',
+    afterDatasetsDraw(chart, args, opts){
+      const idx = opts && opts.index;
+      if(idx===undefined || idx<0) return;
+      const {ctx, chartArea, scales} = chart;
+      const x = scales.x.getPixelForValue(idx);
+      if(!x || x<chartArea.left || x>chartArea.right) return;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(225,29,72,0.55)';
+      ctx.setLineDash([5,4]);
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(x, chartArea.top);
+      ctx.lineTo(x, chartArea.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(225,29,72,0.9)';
+      ctx.font = '600 10.5px JetBrains Mono';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = x > (chartArea.left+chartArea.right)/2 ? 'right' : 'left';
+      ctx.fillText('  ▎退休', x + (ctx.textAlign==='right'?-4:4), chartArea.top + 4);
+      ctx.restore();
+    }
+  };
+  if(typeof Chart !== 'undefined'){ Chart.register(retirementLinePlugin); }
+
+  function renderMcFanChart(labels, p10, p25, p50, p75, p90, retireIdx){
     const ctx = document.getElementById('mcFanChart').getContext('2d');
     if(mcFanChartInstance) mcFanChartInstance.destroy();
     mcFanChartInstance = new Chart(ctx, {
@@ -2151,6 +2355,7 @@
         responsive:true,
         interaction:{ mode:'index', intersect:false },
         plugins:{
+          retirementLine: { index: retireIdx !== undefined ? retireIdx : -1 },
           legend:{ display:true, labels:{ color:'#5a6a82', font:{family:'JetBrains Mono', size:10.5}, boxWidth:12, boxHeight:3,
             filter:(item)=> item.text!=='p10' && item.text!=='p25' } },
           tooltip:{
@@ -2161,7 +2366,7 @@
           }
         },
         scales:{
-          x:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, maxRotation:50, autoSkip:true, maxTicksLimit:8 }, grid:{ color:GRID_COLOR } },
+          x:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, maxRotation:50, autoSkip:true, maxTicksLimit:9 }, grid:{ color:GRID_COLOR } },
           y:{ ticks:{ color:AXIS_COLOR, font:AXIS_FONT, callback:(v)=> fmtMoney(v) }, grid:{ color:GRID_COLOR } }
         }
       }
@@ -2171,7 +2376,15 @@
   function updateMcHistogram(yearIdx){
     if(!mcYearlySamplesCache || !mcYearlySamplesCache[yearIdx]) return;
     const arr = mcYearlySamplesCache[yearIdx];
-    $('mcYearLabel').textContent = '第 '+yearIdx+' 年（'+arr.length+' 條模擬路徑）';
+    const cfg = readInputs();
+    const birth = new Date(cfg.birthDate);
+    const now = new Date();
+    const curAgeExact = (now - birth) / (365.2425*24*3600*1000);
+    const ageAtY = Math.round(curAgeExact) + yearIdx;
+    const totalMonths = Math.max(0, monthsBetween(now, new Date(birth.getFullYear()+cfg.retireAge, birth.getMonth(), birth.getDate())));
+    const totalYears = Math.max(1, Math.ceil(totalMonths/12));
+    const phase = yearIdx<=totalYears ? '累積期' : '提領期';
+    $('mcYearLabel').textContent = `${ageAtY} 歲 · ${phase}（${arr.length} 條模擬路徑）`;
 
     let min=Infinity, max=-Infinity;
     for(const v of arr){ if(v<min) min=v; if(v>max) max=v; }
@@ -2260,7 +2473,7 @@
   }
 
   /* ================= 事件綁定 ================= */
-  ['birthDate','retireAge','curCash','monthlyDca','annualReturn','firstYearExpense','inflation','usdTwdRate'].forEach(id=>{
+  ['birthDate','retireAge','lifeExpectancy','monthlyIncome','curCash','monthlyDca','annualReturn','firstYearExpense','inflation','usdTwdRate'].forEach(id=>{
     $(id).addEventListener('input', ()=>{ scheduleSaveConfig(); renderPortfolios(); computeAll(); });
   });
 

@@ -35,6 +35,7 @@
   let currentUser = null;
   let authReadyResolved = false;
   let resolveAuthReady;
+  let firstAuthEventHandled = false; // 用來分辨「頁面載入時已是登入狀態」與「使用者在本次工作階段中途真正按下登入」
   window.__authReady = new Promise(res => { resolveAuthReady = res; });
 
   function userDocRef(uid){ return doc(db, 'users', uid); }
@@ -72,7 +73,12 @@
   onAuthStateChanged(auth, (user)=>{
     const prevUser = currentUser;
     currentUser = user;
-    window.dispatchEvent(new CustomEvent('authchange', { detail: { user, justSignedIn: !prevUser && !!user } }));
+    const isInitialEvent = !firstAuthEventHandled;
+    firstAuthEventHandled = true;
+    // justSignedIn 只代表「本次工作階段中途真正登入」，頁面載入時偵測到既有登入狀態(isInitialEvent)不算
+    const justSignedIn = !isInitialEvent && !prevUser && !!user;
+    const justSignedOut = !isInitialEvent && !!prevUser && !user;
+    window.dispatchEvent(new CustomEvent('authchange', { detail: { user, justSignedIn, justSignedOut, isInitialEvent } }));
     if(!authReadyResolved){ authReadyResolved = true; resolveAuthReady(); }
   });
 </script>
@@ -936,16 +942,22 @@
   // 未登入時, 只用瀏覽器的 localStorage。
   const storage = {
     async get(key){
+      let cloudEmpty = false;
       try{
         if(window.__getCurrentUser && window.__getCurrentUser()){
           const cloudVal = await window.__cloudGet(key);
           if(cloudVal!==null && cloudVal!==undefined) return { key, value: cloudVal };
-          return null;
+          // 雲端目前沒有這個 key (可能是尚未遷移成功), 往下改走本機, 不要直接當作「沒有資料」
+          cloudEmpty = true;
         }
       }catch(e){ /* 雲端讀取失敗, 往下改走本機 */ }
       try{
         const raw = localStorage.getItem(key);
         if(raw===null) return null;
+        if(cloudEmpty && window.__getCurrentUser && window.__getCurrentUser() && window.__cloudSet){
+          // 自我修復: 本機有資料但雲端遺失(先前遷移可能失敗), 補寫回雲端避免下次又讀不到
+          window.__cloudSet(key, raw).catch(()=>{});
+        }
         return { key, value: raw };
       }catch(e){ return null; }
     },
@@ -1021,6 +1033,15 @@
   }
   function fmtFull(n){ if(n===null||n===undefined||isNaN(n)) return '—'; return Math.round(n).toLocaleString(); }
   function esc(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // 統一 SWR(提領率) 分級標準, 全站共用同一套門檻, 避免不同區塊顯示互相矛盾:
+  // <=4% 安全(good) · 4~5% 可接受(caution) · >5% 偏高(warn) · null/非有限值(退休當日資產為零或負值) 視為 unsafe(最高風險)
+  function swrTier(swr){
+    if(swr===null || swr===undefined || !isFinite(swr)) return 'unsafe';
+    if(swr<=4) return 'good';
+    if(swr<=5) return 'caution';
+    return 'warn';
+  }
 
   /* ================= 參數讀寫 ================= */
   function readInputs(){
@@ -1707,31 +1728,41 @@
 
     const finalAsset = planWith[planWith.length-1].balance;
     const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
-    const swr = finalAsset>0 ? (expenseAtRetirement/finalAsset*100) : 0;
+    // finalAsset<=0 代表退休當日資產為零或負值, 提領率無法計算, 不能當作 0% (=最安全)處理, 改用 null 代表「無法計算/最高風險」
+    const swr = finalAsset>0 ? (expenseAtRetirement/finalAsset*100) : null;
 
     $('metricFinalAsset').textContent = fmtMoney(finalAsset);
     $('metricFinalAsset').title = fmtFull(finalAsset);
 
     const swrMetricEl = $('metricSwr').closest('.metric');
-    $('metricSwr').textContent = swr.toFixed(2)+'%';
-    swrMetricEl.classList.remove('good','warn');
-    if(swr <= 4.5){ swrMetricEl.classList.add('good'); $('metricSwrSub').textContent='落於安全提領率基準內'; }
-    else if(swr <= 7){ $('metricSwrSub').textContent='略高於安全基準，建議留意'; }
-    else { swrMetricEl.classList.add('warn'); $('metricSwrSub').textContent='顯著高於安全基準 ~4%'; }
+    swrMetricEl.classList.remove('good','warn','caution');
+    const swrTierNow = swrTier(swr);
+    if(swrTierNow==='unsafe'){
+      $('metricSwr').textContent = '—';
+      swrMetricEl.classList.add('warn');
+      $('metricSwrSub').textContent = '退休當日資產為零或負值，提領率無法計算，風險極高';
+    } else {
+      $('metricSwr').textContent = swr.toFixed(2)+'%';
+      if(swrTierNow==='good'){ swrMetricEl.classList.add('good'); $('metricSwrSub').textContent='落於安全提領率基準內'; }
+      else if(swrTierNow==='caution'){ swrMetricEl.classList.add('caution'); $('metricSwrSub').textContent='略高於安全基準，建議留意'; }
+      else { swrMetricEl.classList.add('warn'); $('metricSwrSub').textContent='顯著高於安全基準 ~4%'; }
+    }
 
     const curActual = curStock + cfg.curCash;
     $('metricProgress').textContent = fmtMoney(curActual);
     $('metricProgressSub').textContent = '股票 ' + fmtMoney(curStock) + ' ＋ 現金 ' + fmtMoney(cfg.curCash);
 
     // 建議每月投入：以「目標資產 = 首年退休生活費 × 25」為基準
-    // 目標 = 現有資產 × (1+r)^n + 建議 DCA × 年金因子 → 反解建議 DCA
+    // 目標 = 現有資產複利成長 + 建議 DCA × 年金因子 → 反解建議 DCA
+    // 現有資產成長假設需與主引擎 buildPlanPath 一致: 只有股票部位複利成長, 現金部位維持不變(不生息)
     const target25x = expenseAtRetirement * 25;
     const nMonths = totalYears*12;
     const monthlyRateForCalc = Math.pow(1+cfg.annualReturn, 1/12)-1;
-    const currentGrown = curActual * Math.pow(1+cfg.annualReturn, totalYears);
+    const currentGrown = curStock * Math.pow(1+cfg.annualReturn, totalYears) + cfg.curCash;
     const gapAtRetirement = Math.max(0, target25x - currentGrown);
+    // 年金因子採「期初年金」(annuity-due)公式: 與 buildPlanPath 中「先投入、當月立即開始複利」的順序一致
     const annuityFactor = monthlyRateForCalc>0
-      ? (Math.pow(1+monthlyRateForCalc, nMonths)-1)/monthlyRateForCalc
+      ? ((Math.pow(1+monthlyRateForCalc, nMonths)-1)/monthlyRateForCalc) * (1+monthlyRateForCalc)
       : nMonths;
     let suggestedDca = annuityFactor>0 ? gapAtRetirement/annuityFactor : 0;
     if(!isFinite(suggestedDca) || suggestedDca<0) suggestedDca = 0;
@@ -1874,9 +1905,11 @@
       setRangeChip($('rangeFinalAsset'), 'warn', '缺口 ' + fmtMoney(target25x - s.finalAsset));
     }
 
-    // SWR 區間
-    if(s.swr<=4){ setRangeChip($('rangeSwr'), 'pos', '安全 · ' + s.swr.toFixed(2) + '%'); }
-    else if(s.swr<=5){ setRangeChip($('rangeSwr'), 'caution', '可接受 · ' + s.swr.toFixed(2) + '%'); }
+    // SWR 區間 (與 computeAll() 使用同一套 swrTier() 門檻, 避免顯示矛盾)
+    const swrTierR = swrTier(s.swr);
+    if(swrTierR==='unsafe'){ setRangeChip($('rangeSwr'), 'warn', '資產為零，無法計算'); }
+    else if(swrTierR==='good'){ setRangeChip($('rangeSwr'), 'pos', '安全 · ' + s.swr.toFixed(2) + '%'); }
+    else if(swrTierR==='caution'){ setRangeChip($('rangeSwr'), 'caution', '可接受 · ' + s.swr.toFixed(2) + '%'); }
     else { setRangeChip($('rangeSwr'), 'warn', '偏高 · ' + s.swr.toFixed(2) + '%'); }
 
     // 成功機率
@@ -1941,8 +1974,9 @@
 
     // 計分 (0-100)
     let score = 0;
-    // SWR 40 分
-    if(s.swr<=3.5) score += 40;
+    // SWR 40 分 (資產為零/負值(s.swr===null)時代表最高風險, 給 0 分, 不能讓 null<=3.5 之類的隱性型別轉換誤判為安全)
+    if(s.swr===null){ /* score += 0 */ }
+    else if(s.swr<=3.5) score += 40;
     else if(s.swr<=4) score += 36;
     else if(s.swr<=5) score += 24;
     else if(s.swr<=7) score += 12;
@@ -1955,8 +1989,9 @@
       else if(rate>=40) score += 12;
       else score += 4;
     } else {
-      // 沒有 MC 時, 用 SWR 給一個保守估分
-      if(s.swr<=4) score += 30; else if(s.swr<=5) score += 20; else if(s.swr<=7) score += 10; else score += 4;
+      // 沒有 MC 時, 用 SWR 給一個保守估分 (資產為零/負值(s.swr===null)時仍是最高風險, 給 0 分)
+      if(s.swr===null) score += 0;
+      else if(s.swr<=4) score += 30; else if(s.swr<=5) score += 20; else if(s.swr<=7) score += 10; else score += 4;
     }
     // 目標達成率 20 分
     const target25x = s.expenseAtRetirement*25;
@@ -2006,7 +2041,9 @@
     const action = [];
 
     // 提領率
-    if(s.swr>5){
+    if(s.swr===null){
+      watch.push(`依目前假設，退休當日資產預估為<b>零或負值</b>，完全無法支撐提領，需立即檢視每月投入、退休年齡或報酬假設。`);
+    } else if(s.swr>5){
       watch.push(`退休當日初始提領率 <b>${s.swr.toFixed(2)}%</b>，顯著高於 4% 安全基準。若市場歷經下跌，資產可能提早耗盡。`);
     } else if(s.swr>4){
       watch.push(`退休當日初始提領率 <b>${s.swr.toFixed(2)}%</b>，略高於 4% 安全基準，順序報酬風險仍存在。`);
@@ -2026,33 +2063,34 @@
     // 資產缺口
     const shortfall = target25x - s.finalAsset;
     if(shortfall>0 && yearsToRetire>0){
-      // 若要補上缺口, 需要每月額外多少 DCA (以年化報酬 s.annualReturn 複利計算)
+      // 若要補上缺口, 需要每月額外多少 DCA (與主引擎 buildPlanPath 一致, 採期初年金(annuity-due)複利公式)
       const monthlyRate = Math.pow(1+s.annualReturn, 1/12)-1;
       const nMonths = yearsToRetire*12;
-      const factor = monthlyRate>0 ? ((Math.pow(1+monthlyRate, nMonths)-1)/monthlyRate) : nMonths;
+      const factor = monthlyRate>0 ? ((Math.pow(1+monthlyRate, nMonths)-1)/monthlyRate) * (1+monthlyRate) : nMonths;
       const extraDca = factor>0 ? shortfall/factor : 0;
       if(extraDca>0 && extraDca<200000){
         action.push(`要在 ${yearsToRetire.toFixed(1)} 年內補上約 ${fmtMoney(shortfall)} 缺口，需每月<b>額外多投入 ${fmtMoney(extraDca)}</b>（現為 ${fmtMoney(s.monthlyDca)}）。`);
       }
-      // 或者延後退休
-      if(s.annualReturn>0){
-        const requiredFactor = shortfall / (s.monthlyDca * (Math.pow(1+monthlyRate, 12)-1)/monthlyRate + s.finalAsset*monthlyRate*12);
-        // 用近似: 直接嘗試延後 1~5 年
-        for(let extra=1; extra<=5; extra++){
-          const test = s.finalAsset * Math.pow(1+s.annualReturn, extra) + s.monthlyDca*12*extra*Math.pow(1+s.annualReturn, extra/2);
-          if(test>=target25x){
-            action.push(`若將退休年齡由 <b>${s.retireAge}</b> 延後至 <b>${s.retireAge+extra}</b> 歲，即可補上此缺口（依當前報酬假設）。`);
-            break;
-          }
+      // 或者延後退休: 用與主引擎相同的月複利+期初年金公式精算(而非粗略近似)，並考慮延後期間目標(生活費×25)也會隨通膨繼續成長
+      for(let extra=1; extra<=5; extra++){
+        const extraMonths = extra*12;
+        const growFactor = Math.pow(1+monthlyRate, extraMonths);
+        const extraAnnuityFactor = monthlyRate>0 ? ((growFactor-1)/monthlyRate) * (1+monthlyRate) : extraMonths;
+        const futureAsset = s.finalAsset*growFactor + s.monthlyDca*extraAnnuityFactor;
+        const futureExpense = s.firstYearExpense * Math.pow(1+s.inflation, s.totalYears+extra);
+        const futureTarget = futureExpense*25;
+        if(futureAsset>=futureTarget){
+          action.push(`若將退休年齡由 <b>${s.retireAge}</b> 延後至 <b>${s.retireAge+extra}</b> 歲，即可補上此缺口（依當前報酬與通膨假設精算）。`);
+          break;
         }
       }
     }
 
-    // 生活費
-    if(s.swr>5){
+    // 生活費: 若尚未執行蒙地卡羅模擬, 用 4% 法則概估一個調降建議；若已執行, 統一交由下方「Safe Max SWR 建議」給出更精準的數字, 避免兩套不同依據的建議互相矛盾
+    if(s.swr!==null && s.swr>5 && !lastMcResult){
       const safeExpense = s.finalAsset * 0.04 / Math.pow(1+s.inflation, s.totalYears);
       if(safeExpense>0){
-        action.push(`或將退休首年生活費由 <b>${fmtMoney(s.firstYearExpense)}</b> 調降至 <b>${fmtMoney(safeExpense)}</b>，可讓提領率回到 4% 安全區。`);
+        action.push(`或將退休首年生活費由 <b>${fmtMoney(s.firstYearExpense)}</b> 調降至 <b>${fmtMoney(safeExpense)}</b>，可讓提領率回到 4% 安全區（尚未執行蒙地卡羅模擬，此為概估值）。`);
       }
     }
 
@@ -2232,6 +2270,11 @@
     $('mcRuns').value = runs;
     const applyEvents = $('eventsEnabled').checked;
     const { flows: effFlows } = computeEffectiveMonthlyFlows(cfg, totalYears*12, applyEvents);
+    // 退休後(提領期)排定的人生事件: 無薪水可吸收, 依 evHint 說明直接由投組(含現金桶)扣除
+    const decumMonths = decumYears*12;
+    const postRetireEventFlows = decumMonths>0
+      ? computeEventCashflows(totalYears*12 + decumMonths, applyEvents).slice(totalYears*12)
+      : [];
     const monthlyInflation = Math.pow(1+cfg.inflation, 1/12) - 1;
     // 退休當日「當年幣值」的年生活費（inflation-adjusted）
     const expenseAtRetirement = cfg.firstYearExpense * Math.pow(1+cfg.inflation, totalYears);
@@ -2278,13 +2321,15 @@
           retirementBalances.push(bal + cfg.curCash);
 
           // ===== 提領期: 每月從投資組合提領, 每年通膨調整生活費 =====
-          // 現金部位持續存在(不成長), 也會被納入提領來源
+          // 現金部位持續存在(不成長), 也會被納入提領來源; 退休後排定的人生事件無薪水可吸收, 一併視為當月額外提領需求
           let cashBucket = cfg.curCash;
           let monthlyWithdraw = expenseAtRetirement / 12; // 退休當月起, 每月生活費(名目)
           for(let y=1; y<=decumYears; y++){
             for(let i=0;i<12;i++){
+              const decumMonthIdx = (y-1)*12 + i;
+              const eventOut = applyEvents ? (postRetireEventFlows[decumMonthIdx] || 0) : 0;
               // 先從現金扣, 不夠再從股票扣
-              let need = monthlyWithdraw;
+              let need = monthlyWithdraw + eventOut;
               if(cashBucket >= need){ cashBucket -= need; need = 0; }
               else { need -= cashBucket; cashBucket = 0; }
               bal -= need;
@@ -2505,6 +2550,26 @@
 
   /* ================= 倒數計時（每秒） ================= */
   let lastSec = null;
+
+  // 以實際日曆(而非平均年/月長度)精算兩個日期間的年/月/日/時/分/秒差, 避免月份邊界附近出現誤差
+  function calendarCountdownParts(now, target){
+    let y = target.getFullYear() - now.getFullYear();
+    let mo = target.getMonth() - now.getMonth();
+    let d = target.getDate() - now.getDate();
+    let h = target.getHours() - now.getHours();
+    let mi = target.getMinutes() - now.getMinutes();
+    let s = target.getSeconds() - now.getSeconds();
+    if(s<0){ s += 60; mi--; }
+    if(mi<0){ mi += 60; h--; }
+    if(h<0){ h += 24; d--; }
+    if(d<0){
+      const prevMonthLastDay = new Date(target.getFullYear(), target.getMonth(), 0).getDate();
+      d += prevMonthLastDay; mo--;
+    }
+    if(mo<0){ mo += 12; y--; }
+    return { years:y, months:mo, days:d, hours:h, mins:mi, secs:s };
+  }
+
   function tickCountdown(){
     const cfg = readInputs();
     const birth = new Date(cfg.birthDate);
@@ -2514,18 +2579,14 @@
 
     let diffMs = targetDate - now;
     if(diffMs < 0) diffMs = 0;
-
     const oneDay = 24*3600*1000;
-    const years = Math.floor(diffMs/(365.2425*oneDay));
-    let rest = diffMs - years*365.2425*oneDay;
-    const months = Math.floor(rest/(30.4368*oneDay));
-    rest = rest - months*30.4368*oneDay;
-    const days = Math.floor(rest/oneDay);
-    rest = rest - days*oneDay;
-    const hours = Math.floor(rest/3600000);
-    rest = rest - hours*3600000;
-    const mins = Math.floor(rest/60000);
-    const secs = Math.floor((rest - mins*60000)/1000);
+
+    let years=0, months=0, days=0, hours=0, mins=0, secs=0;
+    if(diffMs > 0){
+      const parts = calendarCountdownParts(now, targetDate);
+      years = parts.years; months = parts.months; days = parts.days;
+      hours = parts.hours; mins = parts.mins; secs = parts.secs;
+    }
 
     $('cdYears').textContent = years;
     $('cdMonths').textContent = months;
@@ -2575,26 +2636,38 @@
     computeAll();
   }
 
+  let appInitialized = false;
+  async function initialLoad(){
+    if(appInitialized) return;
+    appInitialized = true;
+    await reloadAllDataAndRender();
+    fetchAllPrices();
+    setInterval(tickCountdown, 1000);
+  }
+
   window.addEventListener('authchange', async (e)=>{
     const user = e.detail.user;
     updateAuthUI(user);
     if(user && e.detail.justSignedIn){
+      // 使用者在本次工作階段中途真正登入(非頁面載入時就已登入): 先把本機資料遷移到雲端, 再整個重載一次
       $('authStatusText').textContent = '登入成功，正在同步資料…';
       await migrateLocalToCloudIfEmpty();
+      await reloadAllDataAndRender();
+    } else if(e.detail.justSignedOut){
+      // 使用者登出: 清除本機快取的雲端資料, 避免同一瀏覽器換人使用或之後未登入瀏覽時看到前一個帳號的資料
+      CLOUD_KEYS.forEach(k=>{ try{ localStorage.removeItem(k); }catch(err){} });
+      await reloadAllDataAndRender();
+    } else if(!e.detail.isInitialEvent){
+      // 理論上不太會發生的其他狀態變化, 保險起見仍重載一次
+      await reloadAllDataAndRender();
     }
-    await reloadAllDataAndRender();
+    // isInitialEvent 且非 justSignedIn/justSignedOut(也就是「頁面載入時的既有登入/未登入狀態」)交由 initialLoad() 統一處理一次, 這裡不重複載入
   });
 
   (async function init(){
     if(window.__authReady){ await window.__authReady; }
     updateAuthUI(window.__getCurrentUser ? window.__getCurrentUser() : null);
-    await loadStorage();
-    renderPortfolios();
-    renderEvents();
-    computeAll();
-    fetchAllPrices();
-
-    setInterval(tickCountdown, 1000);
+    await initialLoad();
   })();
 })();
 </script>
